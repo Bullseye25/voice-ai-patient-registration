@@ -1,22 +1,24 @@
 @echo off
+setlocal
+cd /d "%~dp0"
 title CareCloud Voice AI Agent - Patient Registration System
 color 0A
 
 echo =========================================================================
 echo       CareCloud Voice AI Agent - Patient Registration System
-echo       Lead Developer & Author: Ammad Raza
+echo       Lead Developer: Ammad Raza
 echo =========================================================================
 echo.
 
-:: Check for virtual environment
-if exist ".venv\Scripts\activate.bat" (
-    echo Activating virtual environment (.venv)...
-    call .venv\Scripts\activate.bat
+if exist ".venv\Scripts\python.exe" (
+    echo [INFO] Starting CareCloud Voice AI System via virtual environment...
+    echo.
+    ".venv\Scripts\python.exe" -u run_live.py
 ) else (
-    echo [WARNING] .venv not found. Using system Python...
+    echo [INFO] Starting CareCloud Voice AI System via system Python...
+    echo.
+    python -u run_live.py
 )
 
-echo Starting Live Backend, Public Tunnel (carecloud-voice-ai.loca.lt), and Voice Agent...
-python run_live.py
-
+echo.
 pause
