@@ -92,11 +92,11 @@ The database schema and validation engine must rigorously support the standard U
 
 ### Phase 1: Project Setup, Repository & Standards Foundation
 - [x] **Task 1.1: Challenge & Requirements Analysis**: Deep analysis of functional and non-functional requirements from the assessment specification.
-- [ ] **Task 1.2: Git Repository Initialization & Configuration**:
+- [x] **Task 1.2: Git Repository Initialization & Configuration**:
   - Initialize local git repository with `main` branch.
   - Configure production-grade `.gitignore` covering Python bytecode, virtual environments, `.env` secrets, SQLite databases, IDE artifacts, and OS cache files.
   - Set remote origin to `https://github.com/Bullseye25/voice-ai-patient-registration.git`.
-- [ ] **Task 1.3: Project Structure & Dependency Architecture**:
+- [x] **Task 1.3: Project Structure & Dependency Architecture**:
   - Define modular project structure:
     ```
     carecloud/
@@ -144,15 +144,15 @@ The database schema and validation engine must rigorously support the standard U
 ---
 
 ### Phase 2: Data Modeling, Persistence & Validation Engine
-- [ ] **Task 2.1: Database Engine & Session Management**:
+- [x] **Task 2.1: Database Engine & Session Management**:
   - Implement SQLite database connection with connection pooling and WAL mode enabled (`PRAGMA journal_mode=WAL;`).
   - Implement declarative base and session dependency injection for FastAPI.
-- [ ] **Task 2.2: Patient Entity Definition (`app/models/patient.py`)**:
+- [x] **Task 2.2: Patient Entity Definition (`app/models/patient.py`)**:
   - UUID primary key generation.
   - Indexed fields (`phone_number`, `last_name`, `date_of_birth`).
   - Soft-delete timestamp column (`deleted_at`).
   - Enums for `sex`.
-- [ ] **Task 2.3: Pydantic Validation Schemas (`app/schemas/patient.py`)**:
+- [x] **Task 2.3: Pydantic Validation Schemas (`app/schemas/patient.py`)**:
   - `PatientCreateSchema`: Strict validation rules (regex for names, 10-digit phone normalization, past-date DOB check, valid 2-letter state code, 5-digit ZIP).
   - `PatientUpdateSchema`: Support partial updates (`PATCH`/`PUT`) with all fields optional but validated if provided.
   - `PatientResponseSchema`: Response representation with ISO timestamps and UUIDs.
@@ -174,16 +174,16 @@ The database schema and validation engine must rigorously support the standard U
       }
     }
     ```
-- [ ] **Task 2.4: Seed Data Script**:
+- [x] **Task 2.4: Seed Data Script**:
   - Create seed script to populate 2 realistic patient records for immediate reviewer demonstration and verification.
 
 ---
 
 ### Phase 3: REST API Service Layer Implementation
-- [ ] **Task 3.1: Service Layer (`app/services/patient_service.py`)**:
+- [x] **Task 3.1: Service Layer (`app/services/patient_service.py`)**:
   - Clean separation of business logic from HTTP handlers.
   - Methods: `create_patient`, `get_patient_by_id`, `list_patients`, `update_patient`, `soft_delete_patient`, `find_by_phone`.
-- [ ] **Task 3.2: REST Endpoints (`app/api/v1/patients.py`)**:
+- [x] **Task 3.2: REST Endpoints (`app/api/v1/patients.py`)**:
   - `GET /patients`:
     - Filter query params: `?last_name=`, `?date_of_birth=`, `?phone_number=`
     - Automatically excludes soft-deleted patients (`deleted_at IS NULL`).
@@ -201,17 +201,17 @@ The database schema and validation engine must rigorously support the standard U
   - `DELETE /patients/{id}`:
     - Performs soft deletion by stamping `deleted_at = datetime.utcnow()`.
     - Returns HTTP 200 confirming soft deletion.
-- [ ] **Task 3.3: Global Exception Handlers & Middleware**:
+- [x] **Task 3.3: Global Exception Handlers & Middleware**:
   - Uniform envelope formatting for 400, 404, 422, and 500 errors.
   - Request logging middleware capturing duration, status code, and endpoint.
 
 ---
 
 ### Phase 4: Comprehensive Automated Test Suite
-- [ ] **Task 4.1: Test Infrastructure (`tests/conftest.py`)**:
+- [x] **Task 4.1: Test Infrastructure (`tests/conftest.py`)**:
   - In-memory SQLite database or isolated test database for test runs.
   - Pytest fixtures for test client (`httpx.AsyncClient` or `starlette.testclient.TestClient`).
-- [ ] **Task 4.2: Unit & Integration Tests (`tests/test_api_patients.py`)**:
+- [x] **Task 4.2: Unit & Integration Tests (`tests/test_api_patients.py`)**:
   - **Test Case 1**: Patient creation with valid data (returns 201 + UUID).
   - **Test Case 2**: Server-side validation failure on future DOB (returns 422).
   - **Test Case 3**: Server-side validation failure on invalid phone length / format (returns 422).
@@ -225,7 +225,7 @@ The database schema and validation engine must rigorously support the standard U
 ---
 
 ### Phase 5: Voice AI Agent & Telephony Architecture
-- [ ] **Task 5.1: Conversational Intake Flow Design & Prompt Engineering (`prompts/patient_intake_prompt.md`)**:
+- [x] **Task 5.1: Conversational Intake Flow Design & Prompt Engineering (`prompts/patient_intake_prompt.md`)**:
   - **Agent Persona**: Compassionate, clear, professional healthcare intake specialist.
   - **Required Intake Sequence**:
     1. Greeting: "Thank you for calling CareCloud Patient Registration. My name is Alex..."
@@ -240,34 +240,34 @@ The database schema and validation engine must rigorously support the standard U
        *"Before I submit your registration, please let me confirm what I've recorded: [Full Summary]. Is everything accurate, or would you like to make any changes?"*
     9. Handling Corrections: Gracefully re-prompt and update any field caller corrects.
     10. Graceful Wrap-up: *"You're all set, [First Name]! Your patient registration is complete. Have a wonderful day!"*
-- [ ] **Task 5.2: LLM Tool Calling / Webhook Integration**:
+- [x] **Task 5.2: LLM Tool Calling / Webhook Integration**:
   - Implement tool definitions:
     - `check_patient_exists(phone_number)` -> calls backend service to detect duplicates.
     - `create_patient_record(payload)` -> triggers `POST /patients`.
     - `update_patient_record(patient_id, payload)` -> triggers `PUT /patients/{id}`.
   - Webhook route: `POST /api/v1/voice/webhook` handling payload confirmation and returning structured voice responses.
-- [ ] **Task 5.3: Telephony Provider Provisioning**:
+- [x] **Task 5.3: Telephony Provider Provisioning**:
   - Configure dialable U.S. telephone number via voice platform (Vapi / Retell / Twilio).
   - Connect agent webhook to live backend endpoint (using secure public tunnel via `ngrok` or cloud deployment on Railway/Render).
 
 ---
 
 ### Phase 6: Edge Cases, Resilience & Bonus Features
-- [ ] **Task 6.1: Duplicate Caller Detection (Bonus)**:
+- [x] **Task 6.1: Duplicate Caller Detection (Bonus)**:
   - When caller provides phone number (or from caller ID), check if record exists.
   - If existing patient found: *"It looks like we already have a record for [First Name] [Last Name]. Would you like to update your information instead?"*
-- [ ] **Task 6.2: Mid-Call Interruption & Correction Handling**:
+- [x] **Task 6.2: Mid-Call Interruption & Correction Handling**:
   - Support mid-conversation corrections (e.g., "Actually, my last name is Davis, spelled D-A-V-I-S").
   - Support caller reset ("Can we start over from the beginning?").
-- [ ] **Task 6.3: Network / Database Failure Graceful Degradation**:
+- [x] **Task 6.3: Network / Database Failure Graceful Degradation**:
   - If database write fails during call, agent provides clear, polite message: *"I apologize, but our registration system is experiencing a temporary delay. Your details have been logged, and an intake coordinator will reach out to confirm."*
-- [ ] **Task 6.4: Observability & Audit Logging**:
+- [x] **Task 6.4: Observability & Audit Logging**:
   - Log complete conversation transcripts and extracted JSON payloads to stdout and rotating log files for post-call audit.
 
 ---
 
 ### Phase 7: Deployment, Documentation & Submission Deliverables
-- [ ] **Task 7.1: Professional `README.md`**:
+- [x] **Task 7.1: Professional `README.md`**:
   - Architecture overview & component breakdown.
   - Prerequisites and local setup guide.
   - Environment variables documentation.
@@ -275,10 +275,10 @@ The database schema and validation engine must rigorously support the standard U
   - cURL commands demonstrating each REST endpoint.
   - Technical trade-offs and rationale (e.g., SQLite vs Postgres, Vapi vs raw Twilio).
   - Next steps / future roadmap.
-- [ ] **Task 7.2: Git Push to GitHub**:
+- [x] **Task 7.2: Git Push to GitHub**:
   - Remote repository verification (`https://github.com/Bullseye25/voice-ai-patient-registration.git`).
   - Clean commit history reflecting feature-by-feature progression.
-- [ ] **Task 7.3: End-to-End Live Verification**:
+- [x] **Task 7.3: End-to-End Live Verification**:
   - Live phone call test: Dial number, register sample patient, verify speech readback.
   - Database verification: Query SQLite database to verify persisted fields.
   - API verification: Query `GET /patients` and `GET /patients/{id}` to verify data integrity.
