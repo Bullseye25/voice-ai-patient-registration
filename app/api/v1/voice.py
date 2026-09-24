@@ -101,14 +101,23 @@ async def voice_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     logger.info(f"Incoming Voice Webhook payload: {payload}")
 
-    # Case 1: Vapi-style message wrapper
-    if "message" in payload and "toolCalls" in payload["message"]:
+    # Extract tool calls from any common wrapper
+    tool_calls = None
+    if isinstance(payload, dict):
+        if "message" in payload and isinstance(payload["message"], dict):
+            msg = payload["message"]
+            tool_calls = msg.get("toolCalls") or msg.get("toolCallList") or msg.get("tool_calls")
+        if not tool_calls:
+            tool_calls = payload.get("toolCalls") or payload.get("toolCallList") or payload.get("tool_calls")
+
+    if tool_calls and isinstance(tool_calls, list):
         results = []
-        for call in payload["message"]["toolCalls"]:
-            tool_id = call.get("id")
+        for call in tool_calls:
+            tool_id = call.get("id") or call.get("toolCallId")
             func = call.get("function", {})
-            name = func.get("name")
-            args = func.get("arguments", {})
+            name = func.get("name") or call.get("name")
+            args = func.get("arguments", {}) if "function" in call else call.get("arguments", {})
+            
             # If arguments is passed as JSON string
             if isinstance(args, str):
                 import json
@@ -116,21 +125,37 @@ async def voice_webhook(request: Request, db: Session = Depends(get_db)):
                     args = json.loads(args)
                 except Exception:
                     args = {}
+            elif not isinstance(args, dict):
+                args = {}
+
             res = execute_tool(name, args, db)
             results.append({"toolCallId": tool_id, "result": res})
         return {"results": results}
 
-    # Case 2: Retell / Bland / direct tool-call format
+    # Case 2: Direct tool call format (Retell / Bland / Direct webhook)
     if "name" in payload and "arguments" in payload:
         name = payload["name"]
         args = payload["arguments"]
+        if isinstance(args, str):
+            import json
+            try:
+                args = json.loads(args)
+            except Exception:
+                args = {}
         res = execute_tool(name, args, db)
         return {"result": res}
 
     # Case 3: Direct function call at root
     if "function" in payload:
         func = payload["function"]
-        res = execute_tool(func.get("name"), func.get("arguments", {}), db)
+        args = func.get("arguments", {})
+        if isinstance(args, str):
+            import json
+            try:
+                args = json.loads(args)
+            except Exception:
+                args = {}
+        res = execute_tool(func.get("name"), args, db)
         return {"result": res}
 
     return {"message": "Webhook received but no actionable tool calls found."}

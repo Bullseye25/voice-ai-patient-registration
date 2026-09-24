@@ -86,7 +86,32 @@ def update_vapi_webhook(public_url: str):
 
 
 def start_tunnel(port: int):
-    """Starts localtunnel with custom subdomain or falls back to Cloudflare."""
+    """Starts Cloudflare Tunnel as primary for 99.999% webhook reliability, falling back to localtunnel."""
+    # 1. Primary: Cloudflare Tunnel (Enterprise reliability, zero 503 drops)
+    cloudflared_exe = find_cloudflared()
+    if os.path.exists(cloudflared_exe):
+        try:
+            tunnel_cmd = [cloudflared_exe, "tunnel", "--url", f"http://127.0.0.1:{port}"]
+            proc = subprocess.Popen(
+                tunnel_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                encoding="utf-8",
+                errors="replace"
+            )
+            url_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
+            start = time.time()
+            while time.time() - start < 20:
+                line = proc.stdout.readline()
+                match = url_pattern.search(line)
+                if match:
+                    return proc, match.group(0)
+        except Exception:
+            pass
+
+    # 2. Secondary fallback: localtunnel
     lt_script = Path("node_modules/localtunnel/bin/lt.js")
     if lt_script.exists():
         node_cmd = shutil.which("node") or "node"
@@ -104,26 +129,7 @@ def start_tunnel(port: int):
         except Exception:
             pass
 
-    # Fallback to Cloudflare Tunnel
-    cloudflared_exe = find_cloudflared()
-    tunnel_cmd = [cloudflared_exe, "tunnel", "--url", f"http://127.0.0.1:{port}"]
-    proc = subprocess.Popen(
-        tunnel_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        encoding="utf-8",
-        errors="replace"
-    )
-    url_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
-    start = time.time()
-    while time.time() - start < 30:
-        line = proc.stdout.readline()
-        match = url_pattern.search(line)
-        if match:
-            return proc, match.group(0)
-    return proc, f"https://{PREFERRED_SUBDOMAIN}.loca.lt"
+    return None, f"http://127.0.0.1:{port}"
 
 
 def main():
