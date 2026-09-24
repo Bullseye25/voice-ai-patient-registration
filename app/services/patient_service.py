@@ -11,6 +11,7 @@ from sqlalchemy import and_
 
 from app.models.patient import Patient, SexEnum
 from app.schemas.patient import PatientCreate, PatientUpdate, parse_and_validate_dob, normalize_phone
+from app.core.supabase_client import sync_patient_to_supabase
 
 
 class PatientService:
@@ -39,6 +40,7 @@ class PatientService:
         db.add(patient)
         db.commit()
         db.refresh(patient)
+        sync_patient_to_supabase(patient.to_dict())
         return patient
 
     @staticmethod
@@ -124,6 +126,7 @@ class PatientService:
         patient.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(patient)
+        sync_patient_to_supabase(patient.to_dict())
         return patient
 
     @staticmethod
@@ -142,6 +145,7 @@ class PatientService:
         patient.deleted_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(patient)
+        sync_patient_to_supabase(patient.to_dict())
         return patient
 
     @staticmethod
