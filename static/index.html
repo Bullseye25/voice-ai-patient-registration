@@ -262,7 +262,7 @@
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
             Online & Callable
           </div>
-          <div class="text-xs text-slate-500 mt-1">+1 (463) 223-1253</div>
+          <div id="dashboardMetricPhone" class="text-xs text-slate-500 mt-1">+1 (463) 223-1253</div>
         </div>
       </div>
 
@@ -458,104 +458,189 @@
         </button>
       </div>
 
-      <!-- Current Active Account Status (Always Masked) -->
-      <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 text-xs">
-        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-          <span>Active Configuration</span>
-          <span id="vapiStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Connected
-          </span>
+      <!-- VIEW 1: Form & Current Active Status -->
+      <div id="vapiFormView" class="space-y-4">
+        <!-- Current Active Account Status (Always Masked) -->
+        <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>Active Configuration</span>
+            <span id="vapiStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Connected
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-slate-600">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Private API Key (Masked):</span>
+              <span id="vapiMaskedPrivate" class="font-mono text-slate-800 font-semibold truncate block">••••••••••••••••</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Public API Key (Masked):</span>
+              <span id="vapiMaskedPublic" class="font-mono text-slate-800 font-semibold truncate block">••••••••••••••••</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Active Phone Number:</span>
+              <span id="vapiPhoneNum" class="font-semibold text-emerald-700 truncate block">+1 (463) 223-1253</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Assistant ID:</span>
+              <span id="vapiAssistantId" class="font-mono text-slate-700 text-[11px] truncate block">c42c2da7...</span>
+            </div>
+          </div>
         </div>
-        <div class="grid grid-cols-2 gap-2 text-slate-600">
-          <div>
-            <span class="text-slate-400 block text-[10px]">Private API Key (Masked):</span>
-            <span id="vapiMaskedPrivate" class="font-mono text-slate-800 font-semibold truncate block">••••••••••••••••</span>
+
+        <!-- Switch Account Form -->
+        <form id="vapiSwitchForm" onsubmit="handleVapiSwitchSubmit(event)" class="space-y-3.5">
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-slate-700">
+              New Private API Key <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                id="newVapiPrivateKey" 
+                type="password" 
+                required
+                autocomplete="off"
+                placeholder="Paste new Vapi Private API Key"
+                class="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-ios-blue focus:ring-2 focus:ring-ios-blue/20 bg-gray-50/50 pr-10"
+              />
+              <button type="button" onclick="togglePasswordVisibility('newVapiPrivateKey', 'eyeIconPrivate')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                <svg id="eyeIconPrivate" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div>
-            <span class="text-slate-400 block text-[10px]">Public API Key (Masked):</span>
-            <span id="vapiMaskedPublic" class="font-mono text-slate-800 font-semibold truncate block">••••••••••••••••</span>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-slate-700">
+              New Public API Key <span class="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <div class="relative">
+              <input 
+                id="newVapiPublicKey" 
+                type="password" 
+                autocomplete="off"
+                placeholder="Paste new Vapi Public API Key (optional)"
+                class="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-ios-blue focus:ring-2 focus:ring-ios-blue/20 bg-gray-50/50 pr-10"
+              />
+              <button type="button" onclick="togglePasswordVisibility('newVapiPublicKey', 'eyeIconPublic')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                <svg id="eyeIconPublic" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div>
-            <span class="text-slate-400 block text-[10px]">Active Phone Number:</span>
-            <span id="vapiPhoneNum" class="font-semibold text-emerald-700 truncate block">+1 (463) 223-1253</span>
+
+          <div class="rounded-xl bg-blue-50/80 border border-blue-200/60 p-3 text-[11px] text-blue-900 space-y-1">
+            <div class="font-bold flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Automated Key Replacement:
+            </div>
+            <p class="text-blue-800">
+              Clicking <b>Switch Vapi Account</b> validates the credentials, provisions Alex with clinical tools, links your active telephone number, updates <code class="bg-blue-100/80 px-1 py-0.5 rounded text-[10px]">.env</code>, and wipes old keys.
+            </p>
           </div>
-          <div>
-            <span class="text-slate-400 block text-[10px]">Assistant ID:</span>
-            <span id="vapiAssistantId" class="font-mono text-slate-700 text-[11px] truncate block">c42c2da7...</span>
+
+          <div id="vapiSwitchError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5"></div>
+
+          <div class="pt-2 flex items-center justify-end space-x-2">
+            <button type="button" onclick="closeVapiSettingsModal()" class="ios-btn px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-slate-700 text-xs font-semibold transition">
+              Cancel
+            </button>
+            <button id="vapiSwitchSubmitBtn" type="submit" class="ios-btn px-5 py-2 rounded-xl bg-ios-blue hover:bg-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-500/30 flex items-center space-x-1.5 transition">
+              <span id="vapiSwitchBtnText">Switch Vapi Account</span>
+              <svg id="vapiSwitchSpinner" class="w-3.5 h-3.5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </button>
           </div>
-        </div>
+        </form>
       </div>
 
-      <!-- Switch Account Form -->
-      <form id="vapiSwitchForm" onsubmit="handleVapiSwitchSubmit(event)" class="space-y-3.5">
-        <div class="space-y-1">
-          <label class="block text-xs font-semibold text-slate-700">
-            New Private API Key <span class="text-rose-500">*</span>
-          </label>
-          <div class="relative">
-            <input 
-              id="newVapiPrivateKey" 
-              type="password" 
-              required
-              autocomplete="off"
-              placeholder="Paste new Vapi Private API Key"
-              class="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-ios-blue focus:ring-2 focus:ring-ios-blue/20 bg-gray-50/50 pr-10"
-            />
-            <button type="button" onclick="togglePasswordVisibility('newVapiPrivateKey', 'eyeIconPrivate')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-              <svg id="eyeIconPrivate" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="block text-xs font-semibold text-slate-700">
-            New Public API Key <span class="text-slate-400 font-normal">(Optional)</span>
-          </label>
-          <div class="relative">
-            <input 
-              id="newVapiPublicKey" 
-              type="password" 
-              autocomplete="off"
-              placeholder="Paste new Vapi Public API Key (optional)"
-              class="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-ios-blue focus:ring-2 focus:ring-ios-blue/20 bg-gray-50/50 pr-10"
-            />
-            <button type="button" onclick="togglePasswordVisibility('newVapiPublicKey', 'eyeIconPublic')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-              <svg id="eyeIconPublic" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="rounded-xl bg-blue-50/80 border border-blue-200/60 p-3 text-[11px] text-blue-900 space-y-1">
-          <div class="font-bold flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Automated Key Replacement:
-          </div>
-          <p class="text-blue-800">
-            Clicking <b>Switch Vapi Account</b> validates the credentials, links Alex & clinical tools, syncs the phone number, stores the new keys in <code class="bg-blue-100/80 px-1 py-0.5 rounded text-[10px]">.env</code>, and wipes the previous keys.
-          </p>
-        </div>
-
-        <div id="vapiSwitchError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5"></div>
-
-        <div class="pt-2 flex items-center justify-end space-x-2">
-          <button type="button" onclick="closeVapiSettingsModal()" class="ios-btn px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-slate-700 text-xs font-semibold transition">
-            Cancel
-          </button>
-          <button id="vapiSwitchSubmitBtn" type="submit" class="ios-btn px-5 py-2 rounded-xl bg-ios-blue hover:bg-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-500/30 flex items-center space-x-1.5 transition">
-            <span id="vapiSwitchBtnText">Switch Vapi Account</span>
-            <svg id="vapiSwitchSpinner" class="w-3.5 h-3.5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+      <!-- VIEW 2: Animated Loading View -->
+      <div id="vapiLoadingView" class="hidden py-8 px-4 text-center space-y-5">
+        <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-ios-blue via-indigo-400 to-cyan-300 opacity-30 pulse-glow"></div>
+          <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-ios-blue to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-500/40 text-white z-10">
+            <svg class="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <h4 class="text-lg font-bold text-slate-900 tracking-tight">Activating Vapi Account...</h4>
+          <p id="vapiLoadingStep" class="text-xs text-slate-500 font-medium">Validating API credentials with Vapi platform</p>
+        </div>
+        <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
+          <div id="vapiLoadingBar" class="bg-gradient-to-r from-ios-blue to-cyan-400 h-full w-1/3 transition-all duration-700 rounded-full"></div>
+        </div>
+        <p class="text-[11px] text-slate-400">Configuring Voice AI assistant Alex and linking inbound phone number</p>
+      </div>
+
+      <!-- VIEW 3: Setup Success & Inbound Number Call View -->
+      <div id="vapiSuccessView" class="hidden py-2 px-1 space-y-5">
+        <div class="text-center space-y-1.5">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl shadow-md shadow-emerald-500/20">
+            🎉
+          </div>
+          <h4 class="text-lg font-extrabold text-slate-900 tracking-tight">Vapi Account Setup Complete!</h4>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            Your new Vapi account has been verified, credentials safely persisted in <code class="bg-gray-100 px-1 py-0.5 rounded text-[11px]">.env</code>, and Alex is provisioned with all clinical tools.
+          </p>
+        </div>
+
+        <!-- Highlighted Inbound Phone Call Card -->
+        <div id="vapiSuccessPhoneCard" class="glass-card bg-emerald-50/80 border border-emerald-200/90 p-5 rounded-3xl shadow-lg space-y-3">
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              Dial This Number to Test Call
+            </span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-bold">Ready for Calls</span>
+          </div>
+
+          <div class="flex items-center justify-between bg-white/95 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                📞
+              </div>
+              <div>
+                <div class="text-[10px] font-bold uppercase text-slate-400">Caller Intake Number</div>
+                <div id="vapiSuccessPhoneNumber" class="text-xl md:text-2xl font-black text-slate-900 tracking-wide">+1 (463) 223-1253</div>
+              </div>
+            </div>
+            <button onclick="copySuccessPhone()" class="ios-btn px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+
+          <div class="text-xs text-emerald-800 flex items-center space-x-2">
+            <span>✨</span>
+            <span id="vapiSuccessAgentNotice">Alex (CareCloud Intake Coordinator) is online and ready to answer your call.</span>
+          </div>
+        </div>
+
+        <!-- Fallback if account has no phone number -->
+        <div id="vapiSuccessNoPhoneNotice" class="hidden rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-900 space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <span>⚠️</span> No Inbound Phone Number Found
+          </div>
+          <p class="text-amber-800">
+            This Vapi account currently has no provisioned phone numbers. To receive calls, link or purchase a phone number in your <a href="https://vapi.ai" target="_blank" class="underline font-semibold text-amber-950">Vapi Dashboard</a> and attach it to the CareCloud assistant.
+          </p>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button onclick="closeVapiSettingsModal()" class="ios-btn w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-lg shadow-slate-900/20 transition text-center">
+            Done & Return to Dashboard
           </button>
         </div>
-      </form>
+      </div>
 
     </div>
   </div>
@@ -577,6 +662,19 @@
       if (welcomeEl) welcomeEl.innerText = phone;
       const vapiPhoneEl = document.getElementById('vapiPhoneNum');
       if (vapiPhoneEl) vapiPhoneEl.innerText = phone;
+      const metricEl = document.getElementById('dashboardMetricPhone');
+      if (metricEl) metricEl.innerText = phone;
+      const successEl = document.getElementById('vapiSuccessPhoneNumber');
+      if (successEl) successEl.innerText = phone;
+    }
+
+    function copySuccessPhone() {
+      const phoneEl = document.getElementById('vapiSuccessPhoneNumber');
+      const text = phoneEl ? phoneEl.innerText.trim() : currentPhoneNumber;
+      const cleanDigits = text.replace(/\D/g, '');
+      const toCopy = cleanDigits.length === 10 ? `+1${cleanDigits}` : text;
+      navigator.clipboard.writeText(toCopy);
+      showToast(`Copied ${text} to clipboard!`, '📞');
     }
 
     // View Navigation
@@ -664,6 +762,11 @@
     }
 
     function openVapiSettingsModal() {
+      // Reset view to form
+      document.getElementById('vapiFormView').classList.remove('hidden');
+      document.getElementById('vapiLoadingView').classList.add('hidden');
+      document.getElementById('vapiSuccessView').classList.add('hidden');
+
       loadVapiStatus();
       const errBox = document.getElementById('vapiSwitchError');
       if (errBox) {
@@ -681,6 +784,13 @@
       const pubInput = document.getElementById('newVapiPublicKey');
       if (privInput) privInput.value = '';
       if (pubInput) pubInput.value = '';
+
+      // Reset back to form view after exit animation completes
+      setTimeout(() => {
+        document.getElementById('vapiFormView').classList.remove('hidden');
+        document.getElementById('vapiLoadingView').classList.add('hidden');
+        document.getElementById('vapiSuccessView').classList.add('hidden');
+      }, 350);
     }
 
     async function handleVapiSwitchSubmit(e) {
@@ -688,9 +798,11 @@
       const privateKey = document.getElementById('newVapiPrivateKey').value.trim();
       const publicKey = document.getElementById('newVapiPublicKey').value.trim();
       const errBox = document.getElementById('vapiSwitchError');
-      const submitBtn = document.getElementById('vapiSwitchSubmitBtn');
-      const btnText = document.getElementById('vapiSwitchBtnText');
-      const spinner = document.getElementById('vapiSwitchSpinner');
+      const formView = document.getElementById('vapiFormView');
+      const loadingView = document.getElementById('vapiLoadingView');
+      const successView = document.getElementById('vapiSuccessView');
+      const loadingStep = document.getElementById('vapiLoadingStep');
+      const loadingBar = document.getElementById('vapiLoadingBar');
 
       if (!privateKey) {
         errBox.innerText = "Please provide a valid Vapi Private API Key.";
@@ -699,9 +811,25 @@
       }
 
       errBox.classList.add('hidden');
-      submitBtn.disabled = true;
-      btnText.innerText = "Verifying & Switching...";
-      spinner.classList.remove('hidden');
+
+      // Switch to animated loading view
+      formView.classList.add('hidden');
+      loadingView.classList.remove('hidden');
+      successView.classList.add('hidden');
+
+      // Progressive setup feedback steps
+      loadingStep.innerText = "Validating API credentials with Vapi platform...";
+      loadingBar.style.width = "30%";
+
+      const step1 = setTimeout(() => {
+        loadingStep.innerText = "Provisioning Alex (Intake Coordinator) & clinical tools...";
+        loadingBar.style.width = "65%";
+      }, 1200);
+
+      const step2 = setTimeout(() => {
+        loadingStep.innerText = "Connecting telephony lines & syncing credentials...";
+        loadingBar.style.width = "90%";
+      }, 2400);
 
       try {
         const res = await fetch('/voice/switch-account', {
@@ -713,29 +841,56 @@
           })
         });
 
+        clearTimeout(step1);
+        clearTimeout(step2);
+        loadingBar.style.width = "100%";
+
         const data = await res.json();
 
         if (res.ok) {
-          showToast(data.message || "Switched Vapi Account successfully!", "🚀");
-          if (data.phone_number) {
-            updateDisplayedPhoneNumber(data.phone_number);
+          const newPhone = data.phone_number;
+          if (newPhone) {
+            updateDisplayedPhoneNumber(newPhone);
           }
           await loadVapiStatus();
+
+          // Populate success screen with the exact number to call
+          const phoneCard = document.getElementById('vapiSuccessPhoneCard');
+          const noPhoneNotice = document.getElementById('vapiSuccessNoPhoneNotice');
+          const successPhoneNum = document.getElementById('vapiSuccessPhoneNumber');
+
+          const hasRealPhone = newPhone && !newPhone.toLowerCase().includes('no phone');
+          if (hasRealPhone) {
+            phoneCard.classList.remove('hidden');
+            noPhoneNotice.classList.add('hidden');
+            successPhoneNum.innerText = newPhone;
+          } else {
+            phoneCard.classList.add('hidden');
+            noPhoneNotice.classList.remove('hidden');
+          }
+
+          // Smooth transition to success screen after bar reaches 100%
           setTimeout(() => {
-            closeVapiSettingsModal();
+            loadingView.classList.add('hidden');
+            successView.classList.remove('hidden');
+            showToast('Vapi Account activated! Inbound line ready.', '🚀');
           }, 600);
+
         } else {
+          // Revert to form view and show error
+          loadingView.classList.add('hidden');
+          formView.classList.remove('hidden');
           const detail = (data.error && data.error.message) || data.detail || "Failed to switch Vapi account.";
           errBox.innerText = detail;
           errBox.classList.remove('hidden');
         }
       } catch (err) {
+        clearTimeout(step1);
+        clearTimeout(step2);
+        loadingView.classList.add('hidden');
+        formView.classList.remove('hidden');
         errBox.innerText = "Network error connecting to API server.";
         errBox.classList.remove('hidden');
-      } finally {
-        submitBtn.disabled = false;
-        btnText.innerText = "Switch Vapi Account";
-        spinner.classList.add('hidden');
       }
     }
 
