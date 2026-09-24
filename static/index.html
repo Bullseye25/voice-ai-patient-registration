@@ -307,6 +307,14 @@
               Show Deleted: Off
             </button>
 
+            <!-- Download CSV Button -->
+            <button onclick="downloadPatientsCSV()" class="ios-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center space-x-1.5 transition" title="Download Patient Information as CSV">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              <span>Download CSV</span>
+            </button>
+
             <!-- Reset Filters -->
             <button onclick="resetFilters()" class="ios-btn p-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-700" title="Reset Filters">
               ✕
@@ -849,6 +857,90 @@
         btn.innerText = "Show Deleted: Off";
       }
       fetchPatients();
+    }
+
+    // Export Patient Records to CSV
+    function downloadPatientsCSV() {
+      const q = (document.getElementById('searchInput').value || '').trim();
+      const sexFilter = document.getElementById('sexFilter').value;
+      const stateFilter = document.getElementById('stateFilter').value;
+      const isFiltered = q || sexFilter !== 'ALL' || stateFilter !== 'ALL';
+
+      const recordsToExport = (isFiltered && filteredPatients) ? filteredPatients : allPatients;
+
+      if (!recordsToExport || recordsToExport.length === 0) {
+        showToast('No patient records found to export.', '⚠️');
+        return;
+      }
+
+      const headers = [
+        "Patient ID",
+        "First Name",
+        "Last Name",
+        "Date of Birth",
+        "Sex",
+        "Phone Number",
+        "Email",
+        "Address Line 1",
+        "Address Line 2",
+        "City",
+        "State",
+        "Zip Code",
+        "Country",
+        "Preferred Language",
+        "Insurance Provider",
+        "Insurance Member ID",
+        "Emergency Contact Name",
+        "Emergency Contact Phone",
+        "Record Status",
+        "Created At",
+        "Updated At"
+      ];
+
+      function escapeCSV(val) {
+        if (val === null || val === undefined) return '""';
+        let str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      }
+
+      const rows = recordsToExport.map(p => [
+        escapeCSV(p.patient_id),
+        escapeCSV(p.first_name),
+        escapeCSV(p.last_name),
+        escapeCSV(p.date_of_birth),
+        escapeCSV(p.sex),
+        escapeCSV(p.phone_number),
+        escapeCSV(p.email || ''),
+        escapeCSV(p.address_line_1),
+        escapeCSV(p.address_line_2 || ''),
+        escapeCSV(p.city),
+        escapeCSV(p.state),
+        escapeCSV(p.zip_code),
+        escapeCSV('United States'),
+        escapeCSV(p.preferred_language || 'English'),
+        escapeCSV(p.insurance_provider || ''),
+        escapeCSV(p.insurance_member_id || ''),
+        escapeCSV(p.emergency_contact_name || ''),
+        escapeCSV(p.emergency_contact_phone || ''),
+        escapeCSV(p.deleted_at ? 'Soft Deleted' : 'Active'),
+        escapeCSV(p.created_at || ''),
+        escapeCSV(p.updated_at || '')
+      ].join(','));
+
+      // Prepend UTF-8 BOM (\uFEFF) for immediate full compatibility with Microsoft Excel & Apple Numbers
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `carecloud_patients_${dateStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Exported ${recordsToExport.length} patient records to CSV!`, '📥');
     }
 
     // Render Patient Cards in iOS Style

@@ -225,3 +225,19 @@ def test_persistence_across_server_restarts(tmp_path, sample_patient_dict):
     assert retrieved_patient.phone_number == "5555551234"
     db2.close()
     engine2.dispose()
+
+
+def test_export_patients_csv(client, sample_patient_dict):
+    """Test GET /patients/export/csv exports valid CSV content with headers and patient data."""
+    client.post("/patients", json=sample_patient_dict)
+
+    res = client.get("/patients/export/csv")
+    assert res.status_code == 200
+    assert "text/csv" in res.headers.get("content-type", "")
+    assert 'attachment; filename="carecloud_patients.csv"' in res.headers.get("content-disposition", "")
+
+    csv_text = res.text
+    assert "patient_id,first_name,last_name" in csv_text
+    assert "Alexander,Hamilton" in csv_text
+    assert "United States" in csv_text
+
