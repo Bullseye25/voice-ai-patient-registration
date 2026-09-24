@@ -13,8 +13,10 @@ The **Voice AI Agent Patient Registration System** is an end-to-end conversation
 
 ### Live Demo & Reviewer Contact Information
 * **Dialable U.S. Phone Number:** `+1 (463) 223-1253` *(Call to speak with Alex, the Voice AI agent)*
-* **Live API Base URL:** [https://carecloud-voice-ai.loca.lt](https://carecloud-voice-ai.loca.lt)
-* **Interactive API Documentation:** [https://carecloud-voice-ai.loca.lt/docs](https://carecloud-voice-ai.loca.lt/docs) (Swagger UI)
+* **Base API:** [https://carecloud-voice-ai.loca.lt](https://carecloud-voice-ai.loca.lt/)
+* **Patients Endpoint:** [https://carecloud-voice-ai.loca.lt/patients](https://carecloud-voice-ai.loca.lt/patients)
+* **Interactive API Docs (Swagger):** [https://carecloud-voice-ai.loca.lt/docs](https://carecloud-voice-ai.loca.lt/docs)
+* **Voice Agent Webhook:** [https://carecloud-voice-ai.loca.lt/voice/webhook](https://carecloud-voice-ai.loca.lt/voice/webhook)
 
 ---
 
@@ -74,7 +76,37 @@ The solution is divided into distinct, decoupled tiers ensuring strict separatio
 
 ---
 
-## 4. Patient Demographic Data Model
+## 4. LLM Architecture, Telephony Limits & Billing Model
+
+### 4.1 LLM Selection: OpenAI `gpt-4o-mini`
+* **Latency Optimization:** Real-time telephony requires immediate conversational response. `gpt-4o-mini` delivers sub-250ms Time-To-First-Token (TTFT), eliminating unnatural conversational pauses.
+* **Deterministic Function Calling:** Guarantees strict JSON output conforming to Pydantic schemas when executing tools (`check_patient_by_phone`, `register_patient`, and `update_patient`).
+* **Cost Efficiency:** Highly economical (\$0.15 / 1M input tokens, \$0.60 / 1M output tokens), making production scaling viable.
+* **Interchangeability:** The architecture decouples the LLM provider; the Vapi assistant can switch instantly to Anthropic Claude 3.5 Sonnet, Google Gemini 1.5 Flash, or Groq Llama 3.3.
+
+### 4.2 Telephony Limits & Safety Safeguards
+* **Free Tier Credits:** Vapi provides \$10.00 in starter trial credits (equivalent to ~60 to 100+ minutes of live phone calls).
+* **Concurrency:** Up to 10 concurrent active telephone calls supported simultaneously.
+* **Call Safety Cap:** Maximum call duration is enforced at **10 minutes** (`maxDurationSeconds: 600`) to prevent runaway sessions.
+* **Silence Timeout:** Automatically terminates the call if caller is silent for **30 seconds**.
+
+### 4.3 Billing Model Breakdown
+Vapi bills per second of active connected call time across 5 decoupled pipeline layers:
+
+| Component | Provider Used | Rate / Minute | Description |
+| :--- | :--- | :--- | :--- |
+| **Vapi Platform Fee** | Vapi Orchestration | \$0.050 / min | Audio streaming, interruption handling, tool execution |
+| **Speech-to-Text (STT)** | Deepgram Nova-2 | ~\$0.005 / min | Real-time speech transcription (<150ms latency) |
+| **LLM Reasoning** | OpenAI GPT-4o-mini | ~\$0.010 / min | Intent parsing, conversation logic, function calling |
+| **Text-to-Speech (TTS)** | ElevenLabs (Rachel) | ~\$0.030 / min | High-fidelity, natural clinical intake persona voice |
+| **Telephony Carrier (PSTN)** | Vapi Inbound Phone | ~\$0.015 / min | Inbound cellular/landline phone connection |
+| **TOTAL ESTIMATED COST** | **All Included** | **~\$0.09 – \$0.12 / min** | **Billed only while call is active (\$0 when idle)** |
+
+* **Estimated Cost per Intake Call:** An average 1.5 to 2.5 minute registration call costs approximately **\$0.15 to \$0.25**, allowing 40–60+ complete registrations on standard trial credits.
+
+---
+
+## 5. Patient Demographic Data Model
 
 The platform enforces the U.S. healthcare standard minimum demographic dataset:
 

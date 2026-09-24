@@ -82,3 +82,8 @@ logs/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Node / JS
+node_modules/
+package-lock.json
+package.json
