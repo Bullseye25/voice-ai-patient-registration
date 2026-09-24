@@ -154,11 +154,9 @@ The web dashboard is designed following Apple Human Interface Guidelines (SF Pro
    * Categorized tabs: **All Endpoints (14)**, **Demographics (7)**, **Cloud Sync & Export (2)**, **Telephony (3)**, **Health & Specs (2)**.
    * **One-Click Live Testing (`Test Live ⚡`):** Executes real HTTP requests in-browser, measures roundtrip latency (in ms), and formats JSON responses directly inside an interactive code terminal.
    * Quick links to launch **Swagger UI (`/docs`)**, **ReDoc (`/redoc`)**, and view the raw OpenAPI schema.
-4. **Dynamic Vapi Account Switcher Modal:**
-   * Accessible via the top navigation **`Vapi Account`** button.
-   * Displays current account connection status with **permanently masked credentials** (`b9c9••••e5cb`, `7f02••••893f`), active assistant ID, and provisioned phone number.
-   * Allows reviewers to switch Vapi accounts seamlessly by providing new private/public keys without touching server code or `.env` files.
-   * Automatically validates credentials, provisions Alex with clinical tools, links inbound phone lines, and displays progressive loading animations.
+4. **Secure Telephony & Key Management:**
+   * Account credentials remain securely encapsulated on the server and in Railway environment variables without exposing sensitive keys to public UI elements.
+   * Developers can query connection status via `GET /voice/account-status` (returning masked credentials `b9c9••••e5cb`, `7f02••••893f`) or update keys programmatically via `POST /voice/switch-account`.
 5. **One-Click CSV Export:**
    * The **`Export CSV`** button downloads all demographic records into an audit-compliant, spreadsheet-ready CSV file matching HIPAA intake standards.
 
