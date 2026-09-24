@@ -14,6 +14,7 @@ from app.config import settings
 from app.core.database import init_db, SessionLocal
 from app.services.patient_service import PatientService
 from app.api.v1.patients import router as patients_router
+from app.api.v1.voice import router as voice_router
 
 # Configure Structured Logging
 logging.basicConfig(
@@ -141,6 +142,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # Mount Routes: Expose directly on /patients (matching assessment spec) and /api/v1/patients
 app.include_router(patients_router)
 app.include_router(patients_router, prefix="/api/v1")
+app.include_router(voice_router)
+app.include_router(voice_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])
