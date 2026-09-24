@@ -1,0 +1,38 @@
+[
+  {
+    "first_name": "Eleanor",
+    "last_name": "Vance",
+    "date_of_birth": "04/12/1988",
+    "sex": "Female",
+    "phone_number": "5551234567",
+    "email": "eleanor.vance@example.com",
+    "address_line_1": "742 Evergreen Terrace",
+    "address_line_2": "Apt 2B",
+    "city": "Springfield",
+    "state": "IL",
+    "zip_code": "62704",
+    "insurance_provider": "Blue Cross Blue Shield",
+    "insurance_member_id": "BCBS-8839201",
+    "preferred_language": "English",
+    "emergency_contact_name": "Theodora Vance",
+    "emergency_contact_phone": "5559876543"
+  },
+  {
+    "first_name": "Marcus",
+    "last_name": "Chen",
+    "date_of_birth": "11/23/1975",
+    "sex": "Male",
+    "phone_number": "5558765432",
+    "email": "marcus.chen@example.com",
+    "address_line_1": "100 Pine Street",
+    "address_line_2": null,
+    "city": "Seattle",
+    "state": "WA",
+    "zip_code": "98101",
+    "insurance_provider": "UnitedHealthcare",
+    "insurance_member_id": "UHC-440219",
+    "preferred_language": "English",
+    "emergency_contact_name": "Linda Chen",
+    "emergency_contact_phone": "5556543210"
+  }
+]
