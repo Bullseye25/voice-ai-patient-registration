@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareCloud Voice AI — Patient Registration Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            ios: {
+              blue: '#007AFF',
+              green: '#34C759',
+              indigo: '#5856D6',
+              purple: '#AF52DE',
+              pink: '#FF2D55',
+              orange: '#FF9500',
+              teal: '#30B0C7',
+              graybg: '#F2F2F7',
+              card: 'rgba(255, 255, 255, 0.82)',
+              border: 'rgba(229, 229, 234, 0.8)',
+              subtext: '#8E8E93'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* iOS Glassmorphism and Animations */
+    body {
+      background: radial-gradient(circle at 10% 20%, #F5F7FA 0%, #E8EEF8 90%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05), 0 1px 3px 0 rgba(0,0,0,0.02);
+    }
+    .glass-header {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(30px) saturate(190%);
+      -webkit-backdrop-filter: blur(30px) saturate(190%);
+      border-bottom: 1px solid rgba(229, 229, 234, 0.6);
+    }
+    .ios-btn {
+      transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .ios-btn:active {
+      transform: scale(0.96);
+    }
+    .ios-input {
+      background: rgba(239, 239, 244, 0.75);
+      transition: all 0.2s ease;
+    }
+    .ios-input:focus {
+      background: #FFFFFF;
+      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 25px rgba(0, 122, 255, 0.5)); }
+    }
+    .pulse-glow {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+    @keyframes waveBar {
+      0%, 100% { height: 12px; }
+      50% { height: 38px; }
+    }
+    .sound-bar {
+      animation: waveBar 1.2s infinite ease-in-out;
+    }
+    .sound-bar:nth-child(1) { animation-delay: 0.0s; }
+    .sound-bar:nth-child(2) { animation-delay: 0.2s; }
+    .sound-bar:nth-child(3) { animation-delay: 0.4s; }
+    .sound-bar:nth-child(4) { animation-delay: 0.1s; }
+    .sound-bar:nth-child(5) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="sticky top-0 z-40 glass-header px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3 cursor-pointer" onclick="showWelcomeScreen()">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-ios-blue to-cyan-400 flex items-center justify-center shadow-md shadow-blue-500/20 text-white font-bold text-xl">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg tracking-tight flex items-center gap-2">
+          CareCloud <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-ios-blue">Voice AI</span>
+        </h1>
+        <p class="text-xs text-ios-subtext">Clinical Intake & Registration</p>
+      </div>
+    </div>
+
+    <!-- Phone Number Call Badge -->
+    <div class="flex items-center space-x-3">
+      <div class="hidden md:flex items-center bg-emerald-50 border border-emerald-200/80 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-800 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-ping"></span>
+        <span>Call Inbound:</span>
+        <span class="font-bold ml-1.5 text-emerald-900 tracking-wide">+1 (463) 223-1253</span>
+        <button onclick="copyPhone()" class="ml-2 hover:text-emerald-950 p-0.5 rounded hover:bg-emerald-100 transition" title="Copy Number">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        </button>
+      </div>
+
+      <!-- Navigation Switcher -->
+      <nav class="flex items-center bg-gray-200/70 p-1 rounded-xl text-xs font-semibold">
+        <button id="navWelcomeBtn" onclick="showWelcomeScreen()" class="px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition">Welcome</button>
+        <button id="navDashboardBtn" onclick="showDashboardScreen()" class="px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition">Dashboard</button>
+      </nav>
+
+      <!-- Refresh Live Calls Button -->
+      <button onclick="fetchPatients(true)" class="ios-btn p-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm" title="Refresh Live Patients">
+        <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= NOTIFICATION TOAST ================= -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-12 opacity-0 pointer-events-none">
+    <div class="px-5 py-2.5 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-medium shadow-2xl flex items-center space-x-2 border border-white/10">
+      <span id="toastIcon">✨</span>
+      <span id="toastMsg">Notification message</span>
+    </div>
+  </div>
+
+  <main class="flex-1 flex flex-col">
+
+    <!-- ================= 1. WELCOME / ONBOARDING SCREEN ================= -->
+    <section id="welcomeScreen" class="flex-1 flex items-center justify-center p-6 md:p-12 transition-all duration-500">
+      <div class="max-w-3xl w-full text-center space-y-8">
+        
+        <!-- Animated Voice AI Pulse Visual -->
+        <div class="flex justify-center">
+          <div class="relative w-28 h-28 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-ios-blue via-indigo-400 to-cyan-300 opacity-30 pulse-glow"></div>
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-ios-blue to-cyan-400 flex items-center justify-center shadow-2xl shadow-blue-500/40 text-white z-10">
+              <div class="flex items-center justify-center space-x-1 h-10">
+                <span class="w-1 bg-white rounded-full sound-bar"></span>
+                <span class="w-1 bg-white rounded-full sound-bar"></span>
+                <span class="w-1 bg-white rounded-full sound-bar"></span>
+                <span class="w-1 bg-white rounded-full sound-bar"></span>
+                <span class="w-1 bg-white rounded-full sound-bar"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-ios-blue text-xs font-semibold">
+            <span>Clinical Voice Intelligence</span>
+            <span>•</span>
+            <span>U.S. Healthcare Standard</span>
+          </div>
+          <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            Welcome to <span class="bg-gradient-to-r from-ios-blue via-indigo-600 to-teal-500 bg-clip-text text-transparent">CareCloud</span> Voice AI
+          </h2>
+          <p class="text-base md:text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Experience conversational patient intake. Speak naturally over the telephone with our clinical voice agent Alex, verify demographics with mandatory readbacks, and view persisted records in real time.
+          </p>
+        </div>
+
+        <!-- Dial Now Banner -->
+        <div class="glass-card max-w-lg mx-auto p-5 rounded-3xl border border-white/80 shadow-lg text-left flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xl">
+              📞
+            </div>
+            <div>
+              <div class="text-xs uppercase font-bold text-slate-400 tracking-wider">Dial to Test Live Intake</div>
+              <div class="text-xl font-extrabold text-slate-900 tracking-tight">+1 (463) 223-1253</div>
+              <div class="text-xs text-emerald-600 font-medium">Alex is ready to answer your call</div>
+            </div>
+          </div>
+          <button onclick="copyPhone()" class="ios-btn px-4 py-2 bg-ios-blue text-white text-xs font-semibold rounded-xl shadow-md shadow-blue-500/20 hover:bg-blue-600">
+            Copy
+          </button>
+        </div>
+
+        <!-- Capability Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+          <div class="glass-card p-4 rounded-2xl">
+            <div class="w-8 h-8 rounded-xl bg-blue-100 text-ios-blue flex items-center justify-center mb-2 font-bold text-sm">🎙️</div>
+            <h4 class="font-bold text-sm text-slate-900">Low-Latency Telephony</h4>
+            <p class="text-xs text-slate-500 mt-1">Deepgram Nova-2 + OpenAI GPT-4o-mini for natural conversational turn-taking under 250ms.</p>
+          </div>
+          <div class="glass-card p-4 rounded-2xl">
+            <div class="w-8 h-8 rounded-xl bg-purple-100 text-ios-purple flex items-center justify-center mb-2 font-bold text-sm">🛡️</div>
+            <h4 class="font-bold text-sm text-slate-900">Strict Validation</h4>
+            <p class="text-xs text-slate-500 mt-1">Enforces past DOB, 10-digit U.S. phones, 2-letter state codes, and mandatory readback confirmation.</p>
+          </div>
+          <div class="glass-card p-4 rounded-2xl">
+            <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center mb-2 font-bold text-sm">☁️</div>
+            <h4 class="font-bold text-sm text-slate-900">Dual Cloud Persistence</h4>
+            <p class="text-xs text-slate-500 mt-1">Local SQLite WAL mode with seamless live synchronization to Supabase Cloud PostgreSQL.</p>
+          </div>
+        </div>
+
+        <!-- CTA Action -->
+        <div>
+          <button onclick="showDashboardScreen()" class="ios-btn px-8 py-3.5 bg-gradient-to-r from-ios-blue to-indigo-600 text-white font-semibold rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 text-sm inline-flex items-center space-x-2">
+            <span>Open Clinical Dashboard</span>
+            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= 2. MAIN CLINICAL DASHBOARD ================= -->
+    <section id="dashboardScreen" class="hidden flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto space-y-6">
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-card p-5 rounded-3xl">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Patients</div>
+          <div id="statTotal" class="text-3xl font-extrabold text-slate-900 mt-1.5">--</div>
+          <div class="text-xs text-emerald-600 font-medium mt-1">Persisted in Database</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-3xl">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Registrations</div>
+          <div id="statActive" class="text-3xl font-extrabold text-ios-blue mt-1.5">--</div>
+          <div class="text-xs text-slate-500 mt-1">Excludes soft-deleted</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-3xl">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">States Represented</div>
+          <div id="statStates" class="text-3xl font-extrabold text-ios-purple mt-1.5">--</div>
+          <div class="text-xs text-slate-500 mt-1">Across U.S. Territories</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-3xl">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voice Telephony Gateway</div>
+          <div class="text-base font-bold text-emerald-600 mt-2 flex items-center">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+            Online & Callable
+          </div>
+          <div class="text-xs text-slate-500 mt-1">+1 (463) 223-1253</div>
+        </div>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div class="glass-card p-5 rounded-3xl space-y-4">
+        <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+          
+          <!-- Universal Search Input (Name, Email, Phone, State, Country) -->
+          <div class="relative w-full md:w-96">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              id="searchInput"
+              oninput="handleSearch(this.value)"
+              placeholder="Search by Name, Email, Phone, State, Country..." 
+              class="ios-input w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs md:text-sm font-medium border border-transparent focus:outline-none"
+            >
+          </div>
+
+          <!-- Quick Filters: Sex, State, Status -->
+          <div class="flex items-center gap-2 flex-wrap w-full md:w-auto justify-end">
+            <!-- Sex Filter -->
+            <select id="sexFilter" onchange="applyFilters()" class="ios-input px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 border-none focus:outline-none">
+              <option value="ALL">All Sex</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+              <option value="Decline to Answer">Decline</option>
+            </select>
+
+            <!-- State Filter -->
+            <select id="stateFilter" onchange="applyFilters()" class="ios-input px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 border-none focus:outline-none">
+              <option value="ALL">All States</option>
+            </select>
+
+            <!-- Soft Delete Toggle -->
+            <button id="deletedToggleBtn" onclick="toggleIncludeDeleted()" class="ios-btn px-3 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-slate-600 hover:bg-gray-200">
+              Show Deleted: Off
+            </button>
+
+            <!-- Reset Filters -->
+            <button onclick="resetFilters()" class="ios-btn p-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-700" title="Reset Filters">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Count Indicator -->
+        <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-gray-100">
+          <div>
+            Showing <span id="displayedCount" class="font-bold text-slate-800">0</span> patient(s)
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-ios-blue"></span>
+            <span>Click any patient card to inspect full demographic records & emergency contacts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patients Grid -->
+      <div id="patientGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Patient Cards Rendered Dynamically -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden glass-card p-12 text-center rounded-3xl space-y-3">
+        <div class="w-16 h-16 rounded-full bg-blue-50 text-ios-blue flex items-center justify-center mx-auto text-2xl">
+          🔍
+        </div>
+        <h4 class="font-bold text-lg text-slate-800">No Patient Records Match</h4>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">
+          We couldn't find any patients matching your search criteria. Try clearing search filters or call <span class="font-bold text-ios-blue">+1 (463) 223-1253</span> to register a new caller.
+        </p>
+        <button onclick="resetFilters()" class="ios-btn px-4 py-2 bg-ios-blue text-white text-xs font-semibold rounded-xl">
+          Clear Search
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= 3. PATIENT INSPECTION MODAL (iOS Sheet) ================= -->
+  <div id="patientModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="glass-card max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl border border-white/80 transform scale-95 transition-all duration-300">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-gray-100 pb-4">
+        <div class="flex items-center space-x-3.5">
+          <div id="modalAvatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-ios-blue to-indigo-600 text-white font-bold text-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            --
+          </div>
+          <div>
+            <h3 id="modalName" class="text-2xl font-extrabold text-slate-900">Patient Name</h3>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="modalSexBadge" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-blue-100 text-ios-blue">Male</span>
+              <span id="modalIdBadge" class="text-xs font-mono text-slate-400">ID: --</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="ios-btn w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-slate-500 flex items-center justify-center font-bold">
+          ✕
+        </button>
+      </div>
+
+      <!-- Demographic Details Sections -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        
+        <!-- Contact & Phone -->
+        <div class="bg-gray-50/80 p-4 rounded-2xl space-y-2">
+          <div class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Contact Information</div>
+          <div><span class="text-slate-500">Phone:</span> <span id="modalPhone" class="font-bold text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">Email:</span> <span id="modalEmail" class="font-medium text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">Date of Birth:</span> <span id="modalDob" class="font-medium text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">Preferred Language:</span> <span id="modalLang" class="font-medium text-slate-800 ml-1">English</span></div>
+        </div>
+
+        <!-- Address & Country -->
+        <div class="bg-gray-50/80 p-4 rounded-2xl space-y-2">
+          <div class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Address & Jurisdiction</div>
+          <div><span class="text-slate-500">Street:</span> <span id="modalAddress1" class="font-medium text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">Apt/Suite:</span> <span id="modalAddress2" class="font-medium text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">City, State, Zip:</span> <span id="modalCityStateZip" class="font-bold text-slate-800 ml-1">--</span></div>
+          <div><span class="text-slate-500">Country:</span> <span class="font-semibold text-emerald-700 ml-1">United States (USA)</span></div>
+        </div>
+
+        <!-- Insurance -->
+        <div class="bg-gray-50/80 p-4 rounded-2xl space-y-2">
+          <div class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Insurance Coverage</div>
+          <div><span class="text-slate-500">Provider:</span> <span id="modalInsurance" class="font-bold text-slate-800 ml-1">None Provided</span></div>
+          <div><span class="text-slate-500">Member ID:</span> <span id="modalMemberId" class="font-mono text-slate-800 ml-1">None Provided</span></div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="bg-gray-50/80 p-4 rounded-2xl space-y-2">
+          <div class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Emergency Contact</div>
+          <div><span class="text-slate-500">Contact Name:</span> <span id="modalEmergencyName" class="font-bold text-slate-800 ml-1">None</span></div>
+          <div><span class="text-slate-500">Contact Phone:</span> <span id="modalEmergencyPhone" class="font-medium text-slate-800 ml-1">None</span></div>
+        </div>
+
+      </div>
+
+      <!-- Audit Metadata & Soft Delete Actions -->
+      <div class="pt-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+        <div class="space-y-0.5">
+          <div>Created: <span id="modalCreatedAt" class="text-slate-600 font-medium">--</span></div>
+          <div>Updated: <span id="modalUpdatedAt" class="text-slate-600 font-medium">--</span></div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="modalDeleteBtn" onclick="handleSoftDeleteFromModal()" class="ios-btn px-4 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold transition">
+            Soft Delete Patient
+          </button>
+          <button onclick="closeModal()" class="ios-btn px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold">
+            Done
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT APP LOGIC ================= -->
+  <script>
+    let allPatients = [];
+    let filteredPatients = [];
+    let includeDeleted = false;
+    let selectedPatientId = null;
+
+    // View Navigation
+    function showWelcomeScreen() {
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+      document.getElementById('dashboardScreen').classList.add('hidden');
+      document.getElementById('navWelcomeBtn').className = "px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition";
+      document.getElementById('navDashboardBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+    }
+
+    function showDashboardScreen() {
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('dashboardScreen').classList.remove('hidden');
+      document.getElementById('navDashboardBtn').className = "px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition";
+      document.getElementById('navWelcomeBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+      fetchPatients();
+    }
+
+    // Toast Notification
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      toast.classList.remove('opacity-0', '-translate-y-12', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-12', 'pointer-events-none');
+      }, 2800);
+    }
+
+    function copyPhone() {
+      navigator.clipboard.writeText('+14632231253');
+      showToast('Copied +1 (463) 223-1253 to clipboard!', '📞');
+    }
+
+    // Fetch Patients from FastAPI Backend
+    async function fetchPatients(manual = false) {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const url = `/patients?include_deleted=${includeDeleted}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        
+        if (json.data) {
+          allPatients = json.data;
+          populateStateFilter();
+          updateMetrics();
+          applyFilters();
+          if (manual) showToast(`Refreshed ${allPatients.length} patient records.`, '🔄');
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        showToast('Unable to connect to live API server.', '⚠️');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    // Populate State Filter Options Dynamically
+    function populateStateFilter() {
+      const stateSelect = document.getElementById('stateFilter');
+      const current = stateSelect.value;
+      const states = Array.from(new Set(allPatients.map(p => p.state).filter(Boolean))).sort();
+      
+      stateSelect.innerHTML = '<option value="ALL">All States</option>';
+      states.forEach(st => {
+        const opt = document.createElement('option');
+        opt.value = st;
+        opt.innerText = st;
+        if (st === current) opt.selected = true;
+        stateSelect.appendChild(opt);
+      });
+    }
+
+    // Update Top Row Metrics
+    function updateMetrics() {
+      const total = allPatients.length;
+      const active = allPatients.filter(p => !p.deleted_at).length;
+      const states = new Set(allPatients.map(p => p.state).filter(Boolean)).size;
+
+      document.getElementById('statTotal').innerText = total;
+      document.getElementById('statActive').innerText = active;
+      document.getElementById('statStates').innerText = states;
+    }
+
+    // Multi-Field Search (Name, Email, Phone, State, Country)
+    function handleSearch(val) {
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const sexFilter = document.getElementById('sexFilter').value;
+      const stateFilter = document.getElementById('stateFilter').value;
+
+      filteredPatients = allPatients.filter(p => {
+        // Soft delete filter
+        if (!includeDeleted && p.deleted_at) return false;
+
+        // Sex filter
+        if (sexFilter !== 'ALL' && p.sex !== sexFilter) return false;
+
+        // State filter
+        if (stateFilter !== 'ALL' && p.state !== stateFilter) return false;
+
+        // Universal Query Filter (Name, Email, Phone, State, Country)
+        if (q) {
+          const fullName = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
+          const email = (p.email || '').toLowerCase();
+          const phone = (p.phone_number || '').toLowerCase();
+          const state = (p.state || '').toLowerCase();
+          const city = (p.city || '').toLowerCase();
+          const address = `${p.address_line_1 || ''} ${p.address_line_2 || ''}`.toLowerCase();
+          const country = 'united states usa us'.toLowerCase();
+
+          const matches = fullName.includes(q) ||
+                          email.includes(q) ||
+                          phone.includes(q) ||
+                          state.includes(q) ||
+                          city.includes(q) ||
+                          address.includes(q) ||
+                          (country.includes(q) && (state || city));
+          if (!matches) return false;
+        }
+
+        return true;
+      });
+
+      renderPatientCards();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('sexFilter').value = 'ALL';
+      document.getElementById('stateFilter').value = 'ALL';
+      applyFilters();
+      showToast('Filters reset', '🧹');
+    }
+
+    function toggleIncludeDeleted() {
+      includeDeleted = !includeDeleted;
+      const btn = document.getElementById('deletedToggleBtn');
+      if (includeDeleted) {
+        btn.className = "ios-btn px-3 py-2 rounded-xl text-xs font-semibold bg-rose-100 text-rose-700 shadow-sm";
+        btn.innerText = "Show Deleted: On";
+        showToast('Showing active & soft-deleted records', '🗑️');
+      } else {
+        btn.className = "ios-btn px-3 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-slate-600 hover:bg-gray-200";
+        btn.innerText = "Show Deleted: Off";
+      }
+      fetchPatients();
+    }
+
+    // Render Patient Cards in iOS Style
+    function renderPatientCards() {
+      const grid = document.getElementById('patientGrid');
+      const empty = document.getElementById('emptyState');
+      document.getElementById('displayedCount').innerText = filteredPatients.length;
+
+      grid.innerHTML = '';
+
+      if (filteredPatients.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      filteredPatients.forEach(p => {
+        const card = document.createElement('div');
+        const isDeleted = Boolean(p.deleted_at);
+        card.className = `glass-card p-5 rounded-3xl cursor-pointer hover:shadow-xl transition-all duration-300 relative overflow-hidden group ${isDeleted ? 'opacity-60 bg-red-50/40 border-red-200' : ''}`;
+        card.onclick = () => openPatientModal(p.patient_id);
+
+        const initials = `${(p.first_name || 'P')[0]}${(p.last_name || '')[0] || ''}`.toUpperCase();
+        const formattedPhone = p.phone_number ? p.phone_number.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'No Phone';
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-ios-blue to-teal-400 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-blue-500/20">
+                ${initials}
+              </div>
+              <div>
+                <h4 class="font-bold text-base text-slate-900 group-hover:text-ios-blue transition">
+                  ${p.first_name} ${p.last_name}
+                </h4>
+                <div class="text-xs text-slate-500 font-mono">${formattedPhone}</div>
+              </div>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${p.sex === 'Female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-ios-blue'}">
+              ${p.sex || 'Unknown'}
+            </span>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-gray-100 text-xs text-slate-600 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Location:</span>
+              <span class="font-medium text-slate-800">${p.city || 'City'}, ${p.state || 'US'} ${p.zip_code || ''}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">DOB:</span>
+              <span class="font-medium text-slate-800">${p.date_of_birth || 'N/A'}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Insurance:</span>
+              <span class="font-medium text-slate-800 truncate max-w-[150px]">${p.insurance_provider || 'Self-Pay / None'}</span>
+            </div>
+          </div>
+
+          ${isDeleted ? `
+            <div class="mt-3 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[10px] font-bold uppercase tracking-wider text-center">
+              Soft Deleted Record
+            </div>
+          ` : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Patient Inspector Modal Logic
+    function openPatientModal(id) {
+      const patient = allPatients.find(p => p.patient_id === id);
+      if (!patient) return;
+
+      selectedPatientId = id;
+      const initials = `${(patient.first_name || 'P')[0]}${(patient.last_name || '')[0] || ''}`.toUpperCase();
+
+      document.getElementById('modalAvatar').innerText = initials;
+      document.getElementById('modalName').innerText = `${patient.first_name} ${patient.last_name}`;
+      document.getElementById('modalIdBadge').innerText = `UUID: ${patient.patient_id.slice(0, 8)}...`;
+      document.getElementById('modalSexBadge').innerText = patient.sex || 'Unknown';
+      
+      const formattedPhone = patient.phone_number ? patient.phone_number.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'N/A';
+      document.getElementById('modalPhone').innerText = formattedPhone;
+      document.getElementById('modalEmail').innerText = patient.email || 'None on record';
+      document.getElementById('modalDob').innerText = patient.date_of_birth || 'N/A';
+      document.getElementById('modalLang').innerText = patient.preferred_language || 'English';
+
+      document.getElementById('modalAddress1').innerText = patient.address_line_1 || 'N/A';
+      document.getElementById('modalAddress2').innerText = patient.address_line_2 || 'None';
+      document.getElementById('modalCityStateZip').innerText = `${patient.city || ''}, ${patient.state || ''} ${patient.zip_code || ''}`;
+
+      document.getElementById('modalInsurance').innerText = patient.insurance_provider || 'Self-Pay / None Provided';
+      document.getElementById('modalMemberId').innerText = patient.insurance_member_id || 'N/A';
+
+      document.getElementById('modalEmergencyName').innerText = patient.emergency_contact_name || 'None Provided';
+      document.getElementById('modalEmergencyPhone').innerText = patient.emergency_contact_phone ? patient.emergency_contact_phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'None Provided';
+
+      document.getElementById('modalCreatedAt').innerText = patient.created_at ? new Date(patient.created_at).toLocaleString() : 'N/A';
+      document.getElementById('modalUpdatedAt').innerText = patient.updated_at ? new Date(patient.updated_at).toLocaleString() : 'N/A';
+
+      const deleteBtn = document.getElementById('modalDeleteBtn');
+      if (patient.deleted_at) {
+        deleteBtn.innerText = "Record Already Soft-Deleted";
+        deleteBtn.disabled = true;
+        deleteBtn.className = "px-4 py-2 rounded-xl bg-gray-100 text-gray-400 font-semibold cursor-not-allowed";
+      } else {
+        deleteBtn.innerText = "Soft Delete Patient";
+        deleteBtn.disabled = false;
+        deleteBtn.className = "ios-btn px-4 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold transition";
+      }
+
+      const modal = document.getElementById('patientModal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('patientModal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      selectedPatientId = null;
+    }
+
+    async function handleSoftDeleteFromModal() {
+      if (!selectedPatientId) return;
+      if (!confirm("Are you sure you want to soft-delete this patient record?")) return;
+
+      try {
+        const res = await fetch(`/patients/${selectedPatientId}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('Patient record soft-deleted.', '🗑️');
+          closeModal();
+          fetchPatients();
+        } else {
+          showToast('Could not delete patient record.', '⚠️');
+        }
+      } catch (err) {
+        showToast('Error connecting to API server.', '⚠️');
+      }
+    }
+
+    // Auto-polling for new live calls every 12 seconds
+    setInterval(() => {
+      fetchPatients();
+    }, 12000);
+
+    // Initial Fetch
+    fetchPatients();
+  </script>
+</body>
+</html>

@@ -196,12 +196,20 @@ def main():
     formatted_phone = "+1 (463) 223-1253"
     print("\n" + "#" * 75, flush=True)
     print(f"  SYSTEM STATUS: ONLINE & READY FOR CALLS", flush=True)
-    print(f"  Local Port:            {selected_port}", flush=True)
-    print(f"  Custom Subdomain:      https://carecloud-voice-ai.loca.lt", flush=True)
-    print(f"  Dialable Phone Number: {formatted_phone}", flush=True)
-    print(f"  Public REST API:       {public_url}/patients", flush=True)
-    print(f"  Interactive Docs:      {public_url}/docs", flush=True)
+    print(f"  Local Port:                   {selected_port}", flush=True)
+    print(f"  Web Dashboard (Apple iOS UI): http://127.0.0.1:{selected_port}/", flush=True)
+    print(f"  Public Web Dashboard:         {public_url}/", flush=True)
+    print(f"  Dialable Phone Number:        {formatted_phone}", flush=True)
+    print(f"  Public REST API:              {public_url}/patients", flush=True)
+    print(f"  Interactive Docs:             {public_url}/docs", flush=True)
     print("#" * 75, flush=True)
+
+    # Automatically launch browser to dashboard
+    try:
+        import webbrowser
+        webbrowser.open(f"http://127.0.0.1:{selected_port}/")
+    except Exception:
+        pass
 
     print("\n" + "-" * 75, flush=True)
     print("  HOW TO TEST OVER THE PHONE:", flush=True)

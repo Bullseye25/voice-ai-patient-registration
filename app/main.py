@@ -2,12 +2,14 @@
 FastAPI Main Application
 Includes Global Exception Handlers, Standard JSON Envelopes, and Observability Middleware.
 """
+import os
 import logging
 import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
@@ -144,6 +146,21 @@ app.include_router(patients_router)
 app.include_router(patients_router, prefix="/api/v1")
 app.include_router(voice_router)
 app.include_router(voice_router, prefix="/api/v1")
+
+# Mount Static Files & Serve Apple iOS Dashboard
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", tags=["Frontend"], summary="CareCloud Apple iOS Web App")
+@app.get("/dashboard", tags=["Frontend"], summary="CareCloud Clinical Dashboard")
+def serve_dashboard():
+    """Serves the Apple iOS-styled CareCloud Clinical Dashboard."""
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file, media_type="text/html")
+    return {"message": "CareCloud Voice AI Backend running."}
 
 
 @app.get("/health", tags=["Health"])

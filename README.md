@@ -13,6 +13,7 @@ The **Voice AI Agent Patient Registration System** is an end-to-end conversation
 
 ### Live Demo & Reviewer Contact Information
 * **Dialable U.S. Phone Number:** `+1 (463) 223-1253` *(Call to speak with Alex, the Voice AI agent)*
+* **Interactive Apple iOS Clinical Web Dashboard:** `http://127.0.0.1:8000/` *(Auto-launches in browser on start)*
 * **Base API:** [https://carecloud-voice-ai.loca.lt](https://carecloud-voice-ai.loca.lt/)
 * **Patients Endpoint:** [https://carecloud-voice-ai.loca.lt/patients](https://carecloud-voice-ai.loca.lt/patients)
 * **Interactive API Docs (Swagger):** [https://carecloud-voice-ai.loca.lt/docs](https://carecloud-voice-ai.loca.lt/docs)
