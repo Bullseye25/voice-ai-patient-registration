@@ -94,20 +94,12 @@ def start_tunnel(port: int):
         try:
             proc = subprocess.Popen(
                 lt_cmd,
-                stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL
             )
+            time.sleep(2)
             expected_url = f"https://{PREFERRED_SUBDOMAIN}.loca.lt"
-            # Verify reachable within 8 seconds
-            for _ in range(8):
-                time.sleep(1)
-                try:
-                    r = httpx.get(f"{expected_url}/health", headers={"bypass-tunnel-reminder": "true"}, timeout=4.0)
-                    if r.status_code == 200:
-                        return proc, expected_url
-                except Exception:
-                    pass
             return proc, expected_url
         except Exception:
             pass
