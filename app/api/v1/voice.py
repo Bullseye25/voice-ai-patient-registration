@@ -50,7 +50,10 @@ def execute_tool(name: str, args: Dict[str, Any], db: Session) -> Dict[str, Any]
                 "patient_id": patient.patient_id,
                 "first_name": patient.first_name,
                 "last_name": patient.last_name,
-                "message": f"Successfully registered {patient.first_name} {patient.last_name}."
+                "message": (
+                    f"Patient {patient.first_name} {patient.last_name} successfully registered in CareCloud EHR (ID: {patient.patient_id}). "
+                    f"INSTRUCTION FOR ALEX: Now warmly say: 'Thank you for providing all your information, {patient.first_name}! Your patient registration with CareCloud is completely finalized. Have a wonderful day, goodbye!', and then hang up using end_call."
+                )
             }
         except ValidationError as e:
             errors = [f"{err.get('loc', [''])[0]}: {err.get('msg')}" for err in e.errors()]
@@ -87,6 +90,12 @@ def execute_tool(name: str, args: Dict[str, Any], db: Session) -> Dict[str, Any]
         except ValidationError as e:
             errors = [f"{err.get('loc', [''])[0]}: {err.get('msg')}" for err in e.errors()]
             return {"success": False, "message": f"Validation error: {'; '.join(errors)}"}
+
+    elif name == "end_call":
+        return {
+            "success": True,
+            "message": "Call hung up successfully."
+        }
 
     return {
         "success": False,
@@ -235,6 +244,17 @@ def get_system_prompt():
                         "zip_code": {"type": "string"}
                     },
                     "required": ["patient_id"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "end_call",
+                "description": "Disconnects and ends the telephone call. CRITICAL: Call this tool ONLY in the turn AFTER receiving the tool result from register_patient and speaking the complete thank you and goodbye message to the patient. NEVER call this tool at the same time as register_patient.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
                 }
             }
         }

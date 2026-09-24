@@ -30,11 +30,12 @@ def test_get_voice_prompt_and_tool_definitions(client):
     data = response.json()
     assert "Alex" in data["prompt"]
     assert "CareCloud" in data["prompt"]
-    assert len(data["tools"]) == 3
+    assert len(data["tools"]) == 4
     tool_names = [t["function"]["name"] for t in data["tools"]]
     assert "check_patient_by_phone" in tool_names
     assert "register_patient" in tool_names
     assert "update_patient" in tool_names
+    assert "end_call" in tool_names
 
 
 def test_voice_duplicate_detection_not_found(client):

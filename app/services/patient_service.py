@@ -100,8 +100,8 @@ class PatientService:
         Automatically reconciles with Supabase Cloud if enabled so deletions and updates in Supabase
         are immediately reflected locally.
         """
-        # Reconcile local SQLite with Supabase Cloud
-        reconcile_patients_with_supabase(db)
+        # Reconcile local SQLite with Supabase Cloud immediately
+        reconcile_patients_with_supabase(db, force=True)
 
         query = db.query(Patient)
 

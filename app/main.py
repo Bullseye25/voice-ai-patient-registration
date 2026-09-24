@@ -28,13 +28,14 @@ logger = logging.getLogger("CareCloudApp")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle hook: initializes database tables and seeds demo data."""
+    """Lifecycle hook: initializes database tables, syncs with Supabase Cloud, and seeds demo data if empty."""
     logger.info("Initializing persistent database tables...")
     init_db()
     db = SessionLocal()
     try:
+        PatientService.sync_with_supabase(db, force=True)
         PatientService.seed_demo_data_if_empty(db)
-        logger.info("Database initialized successfully.")
+        logger.info("Database initialized and synchronized successfully.")
     finally:
         db.close()
     yield

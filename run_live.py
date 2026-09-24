@@ -64,9 +64,14 @@ def find_cloudflared() -> str:
 
 
 def update_vapi_webhook(public_url: str):
-    """Updates Vapi assistant serverUrl with the active public tunnel."""
+    """Updates Vapi assistant serverUrl with the active public tunnel and updates .env."""
     try:
         webhook_url = f"{public_url}/voice/webhook"
+        try:
+            from app.api.v1.voice import update_env_variable
+            update_env_variable("WEBHOOK_BASE_URL", public_url)
+        except Exception:
+            pass
         headers = {
             "Authorization": f"Bearer {VAPI_API_KEY}",
             "Content-Type": "application/json"
