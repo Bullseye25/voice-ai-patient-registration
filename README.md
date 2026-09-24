@@ -11,10 +11,10 @@
 
 The **Voice AI Agent Patient Registration System** is an end-to-end conversational healthcare platform designed to automate patient demographic intake over a dialable U.S. telephone number. Built to mirror the warmth, adaptability, and accuracy of a human clinical intake coordinator, the system collects patient details, performs real-time field validation, confirms accuracy with the caller, persists records to a durable database surviving restarts, and exposes a clean, standardized RESTful API.
 
-### Live Demo & Contact Information
-* **Dialable U.S. Phone Number:** `[Provisioning in Progress / TBD]`
-* **Live API Base URL:** `[Deployment URL / Local Tunnel TBD]`
-* **Interactive API Documentation:** `http://localhost:8000/docs` (Swagger UI)
+### Live Demo & Reviewer Contact Information
+* **Dialable U.S. Phone Number:** `+1 (463) 223-1253` *(Call to speak with Alex, the Voice AI agent)*
+* **Live API Base URL:** [https://soldiers-educated-maintains-beauty.trycloudflare.com](https://soldiers-educated-maintains-beauty.trycloudflare.com)
+* **Interactive API Documentation:** [https://soldiers-educated-maintains-beauty.trycloudflare.com/docs](https://soldiers-educated-maintains-beauty.trycloudflare.com/docs) (Swagger UI)
 
 ---
 
@@ -126,16 +126,94 @@ Error responses return:
 }
 ```
 
-### Endpoints:
-* `GET /patients`: List active patients. Query filters: `?last_name=`, `?date_of_birth=`, `?phone_number=`
-* `GET /patients/{patient_id}`: Retrieve a single patient by UUID.
-* `POST /patients`: Register a new patient (server-side validated). Returns `201 Created`.
-* `PUT /patients/{patient_id}`: Partially or fully update existing patient records. Returns `200 OK`.
-* `DELETE /patients/{patient_id}`: Soft-delete patient record (populates `deleted_at`). Returns `200 OK`.
+### Endpoints & cURL Examples:
+
+#### 1. List Active Patients (with Optional Filters)
+```bash
+# List all active patients
+curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients"
+
+# Search by phone number
+curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients?phone_number=5551234567"
+
+# Search by last name
+curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients?last_name=Vance"
+```
+
+#### 2. Register New Patient (POST /patients)
+```bash
+curl -X POST "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "date_of_birth": "05/14/1990",
+    "sex": "Female",
+    "phone_number": "555-234-5678",
+    "email": "jane.doe@example.com",
+    "address_line_1": "123 Main Street",
+    "city": "Austin",
+    "state": "TX",
+    "zip_code": "78701",
+    "insurance_provider": "Aetna",
+    "preferred_language": "English"
+  }'
+```
+
+#### 3. Retrieve Single Patient (GET /patients/:id)
+```bash
+curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>"
+```
+
+#### 4. Update Existing Patient (PUT /patients/:id)
+```bash
+curl -X PUT "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "city": "Dallas",
+    "phone_number": "555-888-9999"
+  }'
+```
+
+#### 5. Soft-Delete Patient (DELETE /patients/:id)
+```bash
+curl -X DELETE "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>"
+```
 
 ---
 
-## 6. Local Setup & Execution Guide
+## 6. Reviewer Phone Call Testing Guide
+
+Reviewers can call the live U.S. phone number directly:
+* **Call Number:** `+1 (463) 223-1253`
+
+### Suggested Test Scenarios:
+1. **Scenario 1: Happy Path Registration**
+   * Call the number.
+   * State your First and Last Name when prompted.
+   * Provide Date of Birth (e.g., *"May 14th, 1990"*).
+   * State Sex (*"Female"* or *"Male"*).
+   * Provide 10-digit Phone Number.
+   * Provide Street Address, City, State, and Zip.
+   * When asked if you wish to provide insurance or emergency contact, opt-in or say *"No thank you"*.
+   * Listen to the AI read back all your information.
+   * Confirm with *"Yes, that is correct"*.
+   * The AI will finalize registration: *"You're all set, [Name]!"*
+   * Query `GET /patients` on the API to verify your record is persisted!
+
+2. **Scenario 2: Error Handling & Correction Testing**
+   * Try giving an invalid date (e.g. a future year like 2030) — the agent will politely re-prompt.
+   * Try giving a 3-digit phone number — the agent will detect the short length and ask for 10 digits.
+   * Spell out an uncommon last name (e.g., *"D-A-V-I-S"*) — the agent will confirm and record it.
+   * Interrupt or correct a detail: *"Actually, my apartment number is 4B, not 4A"* — the agent updates it immediately.
+
+3. **Scenario 3: Duplicate Detection (Bonus Challenge)**
+   * Call back from the same phone number (or state the same phone number).
+   * The agent will recognize your number: *"It looks like we already have a record for [First Name] [Last Name]. Would you like to update your information instead?"*
+
+---
+
+## 7. Local Setup & Execution Guide
 
 ### Prerequisites
 * Python 3.10+ (tested on Python 3.14)
@@ -180,7 +258,7 @@ Error responses return:
 
 ---
 
-## 7. Trade-offs & Known Limitations
+## 8. Trade-offs & Known Limitations
 
 1. **Database Selection (SQLite vs. PostgreSQL):**
    * *Decision:* SQLite was chosen for portability, zero-dependency local execution, and resilience across server restarts within the 3-hour constraint.
@@ -192,7 +270,7 @@ Error responses return:
 
 ---
 
-## 8. Author & Developer
+## 9. Author & Developer
 * **Engineer:** Ammad Raza  
 * **Email:** ammadraza27@gmail.com  
 * **GitHub:** [Bullseye25](https://github.com/Bullseye25)
