@@ -188,3 +188,54 @@ def test_vapi_update_patient_details():
     updated_patient = get_res.json()["data"]
     assert updated_patient["address_line_1"] == "500 Grand Avenue, Suite 10"
     assert updated_patient["city"] == "Beverly Hills"
+
+
+def test_vapi_account_status_masked():
+    """
+    Verifies that the /voice/account-status endpoint returns masked credentials
+    and does not leak private or secret keys in plaintext.
+    """
+    response = client.get("/voice/account-status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "masked_private_key" in data
+    assert "masked_public_key" in data
+    assert "is_configured" in data
+    assert "phone_number" in data
+
+    # Verify that the keys are properly masked with bullet characters
+    masked_priv = data["masked_private_key"]
+    assert "••••" in masked_priv
+    # Ensure plaintext key is never returned verbatim
+    from app.config import settings
+    if settings.VAPI_API_KEY:
+        assert data["masked_private_key"] != settings.VAPI_API_KEY
+
+
+def test_vapi_switch_account_empty_key_rejected():
+    """
+    Verifies that switching accounts with an empty private key is rejected with HTTP 400.
+    """
+    response = client.post("/voice/switch-account", json={"private_key": "   "})
+    assert response.status_code == 400
+    err_msg = response.json().get("error", {}).get("message", "")
+    assert "empty" in err_msg.lower()
+
+
+def test_vapi_switch_account_invalid_key_rejected():
+    """
+    Verifies that switching accounts with an invalid private key rejects unauthorized access.
+    """
+    from unittest.mock import patch, AsyncMock
+    import httpx
+
+    # Mock httpx response from Vapi returning 401 Unauthorized
+    mock_resp = httpx.Response(401, json={"message": "Invalid API key"})
+    
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_resp
+        response = client.post("/voice/switch-account", json={"private_key": "vapi_invalid_test_key_12345"})
+        assert response.status_code == 400
+        err_msg = response.json().get("error", {}).get("message", "")
+        assert "authentication failed" in err_msg.lower() or "invalid" in err_msg.lower()
+

@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     # Telephony & Voice Configuration
     VAPI_API_KEY: str = ""
+    VAPI_PUBLIC_KEY: str = ""
+    VAPI_ASSISTANT_ID: str = ""
+    VAPI_PHONE_NUMBER: str = ""
     VAPI_PHONE_NUMBER_ID: str = ""
     OPENAI_API_KEY: str = ""
     WEBHOOK_BASE_URL: str = ""

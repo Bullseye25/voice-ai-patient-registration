@@ -4,11 +4,13 @@ Supports Vapi, Retell, Bland.ai, and generic HTTP tool calls.
 """
 import logging
 import os
-from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, Request, status
+from typing import Dict, Any, List, Optional
+import httpx
+from fastapi import APIRouter, Depends, Request, status, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
+from app.config import settings
 from app.core.database import get_db
 from app.services.patient_service import PatientService
 from app.schemas.patient import PatientCreate, PatientUpdate
@@ -241,4 +243,234 @@ def get_system_prompt():
     return {
         "prompt": content,
         "tools": tools
+    }
+
+
+def update_env_variable(key: str, value: str, env_path: str = ".env"):
+    """Updates or appends a key-value pair in .env file safely."""
+    lines = []
+    key_found = False
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+    new_lines = []
+    for line in lines:
+        if line.strip().startswith(f"{key}="):
+            new_lines.append(f"{key}={value}\n")
+            key_found = True
+        else:
+            new_lines.append(line)
+
+    if not key_found:
+        new_lines.append(f"{key}={value}\n")
+
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+
+
+def mask_key(k: Optional[str]) -> str:
+    """Masks secret key so it is never leaked in API responses."""
+    if not k or len(k) < 8:
+        return "••••••••••••••••"
+    return f"{k[:4]}••••••••••••{k[-4:]}"
+
+
+class SwitchVapiAccountRequest(BaseModel):
+    private_key: str = Field(..., description="New Vapi Private API Key")
+    public_key: Optional[str] = Field(None, description="New Vapi Public Key (optional)")
+
+
+@router.get("/account-status", status_code=status.HTTP_200_OK, summary="Get Masked Vapi Account Info")
+def get_vapi_account_status():
+    """Returns masked credentials and telephony connection status without leaking secret keys."""
+    key = settings.VAPI_API_KEY or os.getenv("VAPI_API_KEY", "")
+    pub = settings.VAPI_PUBLIC_KEY or os.getenv("VAPI_PUBLIC_KEY", "")
+    aid = settings.VAPI_ASSISTANT_ID or os.getenv("VAPI_ASSISTANT_ID", "")
+    phone = settings.VAPI_PHONE_NUMBER or os.getenv("VAPI_PHONE_NUMBER", "+1 (463) 223-1253")
+
+    return {
+        "is_configured": bool(key),
+        "masked_private_key": mask_key(key),
+        "masked_public_key": mask_key(pub),
+        "assistant_id": aid,
+        "phone_number": phone
+    }
+
+
+@router.post("/switch-account", status_code=status.HTTP_200_OK, summary="Switch Vapi Telephony Account")
+async def switch_vapi_account(payload: SwitchVapiAccountRequest):
+    """
+    Validates new Vapi credentials, provisions or links CareCloud intake assistant,
+    and replaces old keys in .env.
+    """
+    new_private_key = payload.private_key.strip()
+    new_public_key = (payload.public_key or "").strip()
+
+    if not new_private_key:
+        raise HTTPException(status_code=400, detail="Private API key cannot be empty.")
+
+    headers = {
+        "Authorization": f"Bearer {new_private_key}",
+        "Content-Type": "application/json"
+    }
+
+    # 1. Validate credentials against Vapi
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            val_res = await client.get("https://api.vapi.ai/assistant", headers=headers)
+            if val_res.status_code in (401, 403):
+                raise HTTPException(status_code=400, detail="Invalid Vapi Private API Key. Authentication failed.")
+            elif val_res.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"Vapi API returned HTTP {val_res.status_code}: {val_res.text[:100]}")
+            
+            assistants = val_res.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to connect to Vapi API: {str(e)}")
+
+    # 2. Check for existing assistant or create one
+    carecloud_assistant_id = None
+    if isinstance(assistants, list):
+        for a in assistants:
+            if "carecloud" in a.get("name", "").lower():
+                carecloud_assistant_id = a.get("id")
+                break
+
+    # Read prompt from file
+    prompt_path = "prompts/patient_intake_prompt.md"
+    prompt_text = "You are Alex, an intake coordinator at CareCloud."
+    if os.path.exists(prompt_path):
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            prompt_text = f.read()
+
+    webhook_url = settings.WEBHOOK_BASE_URL or os.getenv("WEBHOOK_BASE_URL", "https://carecloud-voice-ai.loca.lt")
+    if not webhook_url.endswith("/voice/webhook"):
+        webhook_url = f"{webhook_url}/voice/webhook"
+
+    tools_spec = [
+        {
+            "type": "function",
+            "function": {
+                "name": "check_patient_by_phone",
+                "description": "Check if a patient record exists by 10-digit phone number.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"phone_number": {"type": "string"}},
+                    "required": ["phone_number"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "register_patient",
+                "description": "Create and persist a new patient demographic record.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "first_name": {"type": "string"},
+                        "last_name": {"type": "string"},
+                        "date_of_birth": {"type": "string"},
+                        "sex": {"type": "string", "enum": ["Male", "Female", "Other", "Decline to Answer"]},
+                        "phone_number": {"type": "string"},
+                        "address_line_1": {"type": "string"},
+                        "city": {"type": "string"},
+                        "state": {"type": "string"},
+                        "zip_code": {"type": "string"}
+                    },
+                    "required": ["first_name", "last_name", "date_of_birth", "sex", "phone_number", "address_line_1", "city", "state", "zip_code"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_patient",
+                "description": "Update an existing patient record.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"patient_id": {"type": "string"}},
+                    "required": ["patient_id"]
+                }
+            }
+        },
+        {
+            "type": "endCall",
+            "function": {
+                "name": "end_call",
+                "description": "Disconnects and terminates the call immediately."
+            }
+        }
+    ]
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        if not carecloud_assistant_id:
+            # Create new assistant in this account
+            create_payload = {
+                "name": "CareCloud Intake Coordinator",
+                "model": {
+                    "provider": "openai",
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "system", "content": prompt_text}],
+                    "tools": tools_spec
+                },
+                "firstMessage": "Thank you for calling CareCloud Patient Registration! My name is Alex. I can help you register as a new patient today. To get started, could I please have your first and last name?",
+                "serverUrl": webhook_url,
+                "endCallPhrases": ["goodbye", "have a great day", "bye now", "that is all"]
+            }
+            c_res = await client.post("https://api.vapi.ai/assistant", headers=headers, json=create_payload)
+            if c_res.status_code in (200, 201):
+                carecloud_assistant_id = c_res.json().get("id")
+        else:
+            await client.patch(
+                f"https://api.vapi.ai/assistant/{carecloud_assistant_id}",
+                headers=headers,
+                json={"serverUrl": webhook_url}
+            )
+
+        # 3. Check for provisioned phone number in this new account
+        phone_number_str = None
+        phone_id = None
+        p_res = await client.get("https://api.vapi.ai/phone-number", headers=headers)
+        if p_res.status_code == 200:
+            phones = p_res.json()
+            if phones and isinstance(phones, list) and len(phones) > 0:
+                phone_obj = phones[0]
+                phone_id = phone_obj.get("id")
+                phone_number_str = phone_obj.get("number")
+                if carecloud_assistant_id and phone_id:
+                    await client.patch(
+                        f"https://api.vapi.ai/phone-number/{phone_id}",
+                        headers=headers,
+                        json={"assistantId": carecloud_assistant_id}
+                    )
+
+    # 4. Safely update .env file and overwrite old keys
+    env_path = ".env"
+    env_updates = {
+        "VAPI_API_KEY": new_private_key,
+        "VAPI_PUBLIC_KEY": new_public_key,
+        "VAPI_ASSISTANT_ID": carecloud_assistant_id or "",
+    }
+    if phone_id:
+        env_updates["VAPI_PHONE_NUMBER_ID"] = phone_id
+    if phone_number_str:
+        env_updates["VAPI_PHONE_NUMBER"] = phone_number_str
+
+    for k, v in env_updates.items():
+        update_env_variable(k, v, env_path)
+        os.environ[k] = v
+        if hasattr(settings, k):
+            setattr(settings, k, v)
+
+    logger.info(f"Switched Vapi account to assistant: {carecloud_assistant_id}, phone: {phone_number_str}")
+
+    return {
+        "status": "success",
+        "message": "Vapi account switched successfully!",
+        "assistant_id": carecloud_assistant_id,
+        "phone_number": phone_number_str or "No phone number provisioned yet in this account",
+        "masked_private_key": mask_key(new_private_key)
     }
