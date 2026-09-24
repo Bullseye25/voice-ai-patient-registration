@@ -103,7 +103,7 @@ def start_tunnel(port: int):
             for _ in range(8):
                 time.sleep(1)
                 try:
-                    r = httpx.get(f"{expected_url}/health", timeout=3.0)
+                    r = httpx.get(f"{expected_url}/health", headers={"bypass-tunnel-reminder": "true"}, timeout=4.0)
                     if r.status_code == 200:
                         return proc, expected_url
                 except Exception:
@@ -236,6 +236,7 @@ def main():
     signal.signal(signal.SIGTERM, shutdown)
 
     # Keep alive loop with auto-reconnect watchdog
+    failed_checks = 0
     try:
         last_health_check = time.time()
         while True:
@@ -244,16 +245,32 @@ def main():
                 print("Backend stopped.", flush=True)
                 break
 
-            # Watchdog: verify tunnel process or health
+            # Watchdog: verify tunnel process is alive
+            if tunnel_proc.poll() is not None:
+                print("\n[WATCHDOG] Tunnel process exited. Restarting tunnel...", flush=True)
+                tunnel_proc, public_url = start_tunnel(selected_port)
+                update_vapi_webhook(public_url)
+                print(f"      -> Reconnected: {public_url}", flush=True)
+
             now = time.time()
-            if tunnel_proc.poll() is not None or (now - last_health_check > 30):
+            if now - last_health_check > 45:
                 last_health_check = now
                 try:
-                    r = httpx.get(f"{public_url}/health", timeout=3.0)
+                    r = httpx.get(
+                        f"{public_url}/health",
+                        headers={"bypass-tunnel-reminder": "true"},
+                        timeout=6.0
+                    )
                     if r.status_code != 200:
-                        raise Exception("Health check failed")
+                        failed_checks += 1
+                    else:
+                        failed_checks = 0
                 except Exception:
-                    print("\n[WATCHDOG] Reconnecting tunnel to keep subdomain alive...", flush=True)
+                    failed_checks += 1
+
+                if failed_checks >= 3:
+                    print("\n[WATCHDOG] Subdomain unresponsive after 3 attempts. Reconnecting...", flush=True)
+                    failed_checks = 0
                     try:
                         tunnel_proc.terminate()
                     except Exception:
