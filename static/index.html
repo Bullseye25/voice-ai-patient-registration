@@ -133,6 +133,10 @@
       <nav class="flex items-center bg-gray-200/70 p-1 rounded-xl text-xs font-semibold">
         <button id="navWelcomeBtn" onclick="showWelcomeScreen()" class="px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition">Welcome</button>
         <button id="navDashboardBtn" onclick="showDashboardScreen()" class="px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition">Dashboard</button>
+        <button id="navApiBtn" onclick="showApiScreen()" class="px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5" title="View REST API Endpoints & Documentation">
+          <span>API Endpoints</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-100 text-ios-blue font-mono font-bold">12</span>
+        </button>
       </nav>
 
       <!-- Telephony / Vapi Switcher Button -->
@@ -458,6 +462,226 @@
         <button onclick="resetFilters()" class="ios-btn px-4 py-2 bg-ios-blue text-white text-xs font-semibold rounded-xl">
           Clear Search
         </button>
+      </div>
+
+    </section>
+
+    <!-- ================= 3. API ENDPOINTS & DOCUMENTATION SCREEN ================= -->
+    <section id="apiScreen" class="hidden flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto space-y-6">
+
+      <!-- API Hero Banner -->
+      <div class="glass-card p-6 md:p-8 rounded-3xl border border-white/80 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-ios-blue text-xs font-semibold">
+            <span>REST API v1</span>
+            <span>•</span>
+            <span>FastAPI OpenAPI 3.0</span>
+            <span>•</span>
+            <span>Standard JSON Envelope</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">CareCloud API Endpoints & Developer Reference</h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            All endpoints strictly follow standard HTTP status codes (200, 201, 400, 404, 422, 500) and return unified JSON envelopes: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">{ "data": {...}, "error": null }</code>.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <a href="/docs" target="_blank" class="ios-btn px-4 py-2.5 rounded-xl bg-ios-blue hover:bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-500/20 flex items-center space-x-1.5 transition">
+            <span>Open Swagger UI</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+          <a href="/redoc" target="_blank" class="ios-btn px-4 py-2.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition">
+            <span>ReDoc Spec</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+          <a href="/openapi.json" target="_blank" class="ios-btn px-3 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-slate-600 text-xs font-mono font-semibold transition" title="Raw OpenAPI JSON">
+            openapi.json
+          </a>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex items-center space-x-2 overflow-x-auto pb-1">
+        <button onclick="filterApiCategory('all')" id="apiCatAll" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-ios-blue shadow-sm transition">All Endpoints (14)</button>
+        <button onclick="filterApiCategory('patients')" id="apiCatPatients" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition">Patient Demographics (7)</button>
+        <button onclick="filterApiCategory('sync')" id="apiCatSync" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition">Cloud Sync & Export (2)</button>
+        <button onclick="filterApiCategory('telephony')" id="apiCatTelephony" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition">Voice Telephony & Vapi (3)</button>
+        <button onclick="filterApiCategory('health')" id="apiCatHealth" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition">System & Specs (2)</button>
+      </div>
+
+      <!-- Endpoint Cards Grid -->
+      <div class="space-y-4">
+
+        <!-- 1. GET /patients -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">GET</span>
+              <span class="font-mono font-bold text-slate-900 text-sm">/patients</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue font-semibold">List Patients</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="executeApiTest('/patients?include_deleted=true', 'getPatientsTestResult')" class="ios-btn px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition flex items-center space-x-1">
+                <span>Test Live</span>
+                <span class="text-[11px]">⚡</span>
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-600">Retrieves all registered patient records. Supports query parameters for filtering by <code class="font-mono text-slate-800">?last_name=</code>, <code class="font-mono text-slate-800">?phone_number=</code>, <code class="font-mono text-slate-800">?date_of_birth=</code>, and <code class="font-mono text-slate-800">?include_deleted=true</code>. Automatically reconciles with Supabase Cloud.</p>
+          <div id="getPatientsTestResult" class="hidden rounded-2xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto max-h-48 border border-slate-800"></div>
+        </div>
+
+        <!-- 2. GET /patients/{patient_id} -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">GET</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients/{patient_id}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue font-semibold">Retrieve Single</span>
+          </div>
+          <p class="text-xs text-slate-600">Returns comprehensive demographic information, insurance details, and emergency contacts for a single patient by UUID. Returns 404 if not found or soft-deleted.</p>
+        </div>
+
+        <!-- 3. POST /patients -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-ios-blue font-mono font-bold text-xs">POST</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue font-semibold">Create Patient</span>
+          </div>
+          <p class="text-xs text-slate-600">Creates and persists a new patient record. Validates past DOB, 10-digit U.S. phone numbers, 2-letter state codes, and 5-digit ZIPs. Persists to SQLite WAL and mirrors immediately to Supabase Cloud.</p>
+          <div class="bg-gray-50/80 rounded-2xl p-3 text-[11px] font-mono text-slate-700 space-y-1">
+            <span class="font-bold text-slate-400 uppercase text-[9px] block">Sample Request Payload:</span>
+            <code>{"first_name": "Eleanor", "last_name": "Vance", "date_of_birth": "1992-06-15", "sex": "Female", "phone_number": "5551234567", "address_line_1": "124 Hilltop Rd", "city": "Boston", "state": "MA", "zip_code": "02108"}</code>
+          </div>
+        </div>
+
+        <!-- 4. PUT /patients/{patient_id} -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 font-mono font-bold text-xs">PUT</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients/{patient_id}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold">Partial Update</span>
+          </div>
+          <p class="text-xs text-slate-600">Updates existing patient demographic fields. Supports partial updates (e.g. updating telephone or address only). Updates timestamps and syncs to Supabase.</p>
+        </div>
+
+        <!-- 5. DELETE /patients/{patient_id} -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-mono font-bold text-xs">DELETE</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients/{patient_id}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-semibold">Soft-Delete (Archive)</span>
+          </div>
+          <p class="text-xs text-slate-600">Soft-deletes a patient record by setting <code class="font-mono text-slate-800">deleted_at</code> timestamp in SQLite and Supabase. Record moves into the dashboard Archive Folder view.</p>
+        </div>
+
+        <!-- 6. POST /patients/{patient_id}/restore -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">POST</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients/{patient_id}/restore</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Restore Archived</span>
+          </div>
+          <p class="text-xs text-slate-600">Restores an archived patient record by clearing <code class="font-mono text-slate-800">deleted_at = None</code>. Returns patient record back to the Active Patients list.</p>
+        </div>
+
+        <!-- 7. DELETE /patients/{patient_id}/permanent -->
+        <div class="api-card api-cat-patients glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-rose-200 text-rose-900 font-mono font-bold text-xs">DELETE</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/patients/{patient_id}/permanent</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-semibold">Permanent Purge</span>
+          </div>
+          <p class="text-xs text-slate-600">Permanently deletes a patient record from both local SQLite storage and Supabase Cloud PostgreSQL. Cannot be undone.</p>
+        </div>
+
+        <!-- 8. GET /patients/export/csv -->
+        <div class="api-card api-cat-sync glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">GET</span>
+              <span class="font-mono font-bold text-slate-900 text-sm">/patients/export/csv</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">CSV Stream</span>
+            </div>
+            <a href="/patients/export/csv" download class="ios-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold transition flex items-center space-x-1">
+              <span>Download CSV</span>
+              <span class="text-[11px]">📥</span>
+            </a>
+          </div>
+          <p class="text-xs text-slate-600">Streams all patient demographic records as a CSV file attachment with UTF-8 BOM formatting for instant Microsoft Excel and Apple Numbers compatibility.</p>
+        </div>
+
+        <!-- 9. POST /patients/sync-supabase -->
+        <div class="api-card api-cat-sync glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-ios-blue font-mono font-bold text-xs">POST</span>
+              <span class="font-mono font-bold text-slate-900 text-sm">/patients/sync-supabase</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue font-semibold">Cloud Sync</span>
+            </div>
+            <button onclick="executeApiTest('/patients/sync-supabase', 'syncSupabaseResult', 'POST')" class="ios-btn px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-ios-blue text-xs font-semibold transition flex items-center space-x-1">
+              <span>Execute Sync</span>
+              <span class="text-[11px]">☁️</span>
+            </button>
+          </div>
+          <p class="text-xs text-slate-600">Forces an immediate bidirectional synchronization between local SQLite and Supabase Cloud. Purges locally any rows deleted in Supabase and pulls remote updates.</p>
+          <div id="syncSupabaseResult" class="hidden rounded-2xl bg-slate-950 p-4 font-mono text-xs text-blue-400 overflow-x-auto max-h-48 border border-slate-800"></div>
+        </div>
+
+        <!-- 10. POST /voice/webhook -->
+        <div class="api-card api-cat-telephony glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-ios-blue font-mono font-bold text-xs">POST</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/voice/webhook</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold">Live Telephony</span>
+          </div>
+          <p class="text-xs text-slate-600">Inbound Vapi voice assistant webhook listener. Handles <code class="font-mono text-slate-800">tool-calls</code> from the LLM turn-taking pipeline, executing <code class="font-mono text-slate-800">check_patient_by_phone</code>, <code class="font-mono text-slate-800">register_patient</code>, <code class="font-mono text-slate-800">update_patient</code>, and <code class="font-mono text-slate-800">end_call</code>.</p>
+        </div>
+
+        <!-- 11. GET /voice/account-status -->
+        <div class="api-card api-cat-telephony glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">GET</span>
+              <span class="font-mono font-bold text-slate-900 text-sm">/voice/account-status</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Vapi Status</span>
+            </div>
+            <button onclick="executeApiTest('/voice/account-status', 'vapiStatusResult')" class="ios-btn px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition flex items-center space-x-1">
+              <span>Test Live</span>
+              <span class="text-[11px]">⚡</span>
+            </button>
+          </div>
+          <p class="text-xs text-slate-600">Returns the currently connected Vapi configuration status with masked credentials, configured Assistant ID, and assigned telephone number.</p>
+          <div id="vapiStatusResult" class="hidden rounded-2xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto max-h-48 border border-slate-800"></div>
+        </div>
+
+        <!-- 12. POST /voice/switch-account -->
+        <div class="api-card api-cat-telephony glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center space-x-2.5">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-ios-blue font-mono font-bold text-xs">POST</span>
+            <span class="font-mono font-bold text-slate-900 text-sm">/voice/switch-account</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-ios-blue font-semibold">Account Switcher</span>
+          </div>
+          <p class="text-xs text-slate-600">Dynamically migrates the system to a new Vapi account by validating private/public keys, provisioning Alex with clinical tools, updating `.env`, and linking inbound phone numbers.</p>
+        </div>
+
+        <!-- 13. GET /health -->
+        <div class="api-card api-cat-health glass-card p-5 rounded-3xl space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">GET</span>
+              <span class="font-mono font-bold text-slate-900 text-sm">/health</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Health Check</span>
+            </div>
+            <button onclick="executeApiTest('/health', 'healthResult')" class="ios-btn px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition flex items-center space-x-1">
+              <span>Test Live</span>
+              <span class="text-[11px]">⚡</span>
+            </button>
+          </div>
+          <p class="text-xs text-slate-600">Performs automated diagnostic health checks on FastAPI application status, SQLite database connectivity, and Supabase Cloud synchronization.</p>
+          <div id="healthResult" class="hidden rounded-2xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto max-h-48 border border-slate-800"></div>
+        </div>
+
       </div>
 
     </section>
@@ -881,16 +1105,80 @@
     function showWelcomeScreen() {
       document.getElementById('welcomeScreen').classList.remove('hidden');
       document.getElementById('dashboardScreen').classList.add('hidden');
+      document.getElementById('apiScreen').classList.add('hidden');
       document.getElementById('navWelcomeBtn').className = "px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition";
       document.getElementById('navDashboardBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+      document.getElementById('navApiBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5";
     }
 
     function showDashboardScreen() {
       document.getElementById('welcomeScreen').classList.add('hidden');
       document.getElementById('dashboardScreen').classList.remove('hidden');
+      document.getElementById('apiScreen').classList.add('hidden');
       document.getElementById('navDashboardBtn').className = "px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition";
       document.getElementById('navWelcomeBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+      document.getElementById('navApiBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5";
       fetchPatients();
+    }
+
+    function showApiScreen() {
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('dashboardScreen').classList.add('hidden');
+      document.getElementById('apiScreen').classList.remove('hidden');
+      document.getElementById('navApiBtn').className = "px-3.5 py-1.5 rounded-lg bg-white text-ios-blue shadow-sm transition flex items-center space-x-1.5";
+      document.getElementById('navWelcomeBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+      document.getElementById('navDashboardBtn').className = "px-3.5 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 transition";
+    }
+
+    // Filter API Category Cards
+    function filterApiCategory(cat) {
+      const cats = ['all', 'patients', 'sync', 'telephony', 'health'];
+      cats.forEach(c => {
+        const btn = document.getElementById(`apiCat${c.charAt(0).toUpperCase() + c.slice(1)}`);
+        if (btn) {
+          if (c === cat) {
+            btn.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-white text-ios-blue shadow-sm transition";
+          } else {
+            btn.className = "px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
+          }
+        }
+      });
+
+      const cards = document.querySelectorAll('.api-card');
+      cards.forEach(card => {
+        if (cat === 'all' || card.classList.contains(`api-cat-${cat}`)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    // Live In-Browser API Endpoint Test Execution
+    async function executeApiTest(path, containerId, method = 'GET') {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      container.classList.remove('hidden');
+      container.innerHTML = '<span class="text-slate-400">Executing request to ' + path + '...</span>';
+
+      try {
+        const t0 = performance.now();
+        const res = await fetch(path, { method });
+        const latency = Math.round(performance.now() - t0);
+        const data = await res.json();
+        const formatted = JSON.stringify(data, null, 2);
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800 text-[11px]">
+            <span class="${res.ok ? 'text-emerald-400' : 'text-rose-400'} font-bold">Status: ${res.status} ${res.statusText || 'OK'}</span>
+            <span class="text-slate-500 font-mono">${latency}ms</span>
+          </div>
+          <pre class="pt-2">${formatted}</pre>
+        `;
+      } catch (err) {
+        container.innerHTML = `<span class="text-rose-400 font-bold">Error:</span> ${err.message}`;
+      }
     }
 
     // Toast Notification
