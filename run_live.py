@@ -1,6 +1,6 @@
 """
 CareCloud Voice AI Agent - Live Runner
-Starts FastAPI backend, launches public tunnel with custom subdomain (carecloud-voice-ai),
+Starts FastAPI backend with automatic port failover, launches public tunnel (carecloud-voice-ai),
 automatically syncs Vapi webhook, and displays reviewer testing instructions.
 """
 import sys
@@ -8,6 +8,7 @@ import os
 import re
 import time
 import signal
+import socket
 import subprocess
 import shutil
 from pathlib import Path
@@ -28,6 +29,24 @@ VAPI_API_KEY = os.getenv("VAPI_API_KEY", "2c6c775a-673d-4251-8006-763dc8492bd7")
 ASSISTANT_ID = os.getenv("VAPI_ASSISTANT_ID", "c42c2da7-e3b9-431b-ace5-a25bdc6b8f67")
 PHONE_NUMBER = os.getenv("VAPI_PHONE_NUMBER", "+14632231253")
 PREFERRED_SUBDOMAIN = "carecloud-voice-ai"
+
+
+def find_available_port(start_port: int = 8000, max_attempts: int = 50) -> int:
+    """
+    Checks if start_port is available. If occupied, iterates to find the next free port.
+    """
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+
+    # Fallback: ask OS for any available ephemeral port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
 
 
 def find_cloudflared() -> str:
@@ -66,12 +85,12 @@ def update_vapi_webhook(public_url: str):
         return False, str(e)
 
 
-def start_tunnel():
+def start_tunnel(port: int):
     """Starts localtunnel with custom subdomain or falls back to Cloudflare."""
     lt_script = Path("node_modules/localtunnel/bin/lt.js")
     if lt_script.exists():
         node_cmd = shutil.which("node") or "node"
-        lt_cmd = [node_cmd, str(lt_script), "--port", "8000", "--subdomain", PREFERRED_SUBDOMAIN]
+        lt_cmd = [node_cmd, str(lt_script), "--port", str(port), "--subdomain", PREFERRED_SUBDOMAIN]
         try:
             proc = subprocess.Popen(
                 lt_cmd,
@@ -95,7 +114,7 @@ def start_tunnel():
 
     # Fallback to Cloudflare Tunnel
     cloudflared_exe = find_cloudflared()
-    tunnel_cmd = [cloudflared_exe, "tunnel", "--url", "http://127.0.0.1:8000"]
+    tunnel_cmd = [cloudflared_exe, "tunnel", "--url", f"http://127.0.0.1:{port}"]
     proc = subprocess.Popen(
         tunnel_cmd,
         stdout=subprocess.PIPE,
@@ -120,13 +139,23 @@ def main():
     print("       CareCloud Voice AI Agent - Live Intake System", flush=True)
     print("       Lead Developer & Document Author: Ammad Raza", flush=True)
     print("=" * 75, flush=True)
-    print("\n[1/3] Starting FastAPI Backend on http://127.0.0.1:8000...", flush=True)
 
-    # 1. Start Uvicorn subprocess
+    # 0. Port Selection & Automatic Fallback
+    target_port = int(os.getenv("PORT", 8000))
+    selected_port = find_available_port(target_port)
+
+    if selected_port != target_port:
+        print(f"\n[NOTICE] Port {target_port} is busy. Automatically switched to available port {selected_port}.", flush=True)
+    else:
+        print(f"\n[PORT] Using port {selected_port}.", flush=True)
+
+    print(f"\n[1/3] Starting FastAPI Backend on http://127.0.0.1:{selected_port}...", flush=True)
+
+    # 1. Start Uvicorn subprocess on selected_port
     python_exe = sys.executable
     uvicorn_cmd = [
         python_exe, "-m", "uvicorn", "app.main:app",
-        "--host", "127.0.0.1", "--port", "8000"
+        "--host", "127.0.0.1", "--port", str(selected_port)
     ]
     backend_proc = subprocess.Popen(
         uvicorn_cmd,
@@ -140,7 +169,7 @@ def main():
     for _ in range(10):
         time.sleep(1)
         try:
-            r = httpx.get("http://127.0.0.1:8000/health", timeout=2.0)
+            r = httpx.get(f"http://127.0.0.1:{selected_port}/health", timeout=2.0)
             if r.status_code == 200:
                 backend_ready = True
                 break
@@ -152,9 +181,9 @@ def main():
         sys.exit(1)
     print("      -> FastAPI backend is running and healthy.", flush=True)
 
-    # 2. Start Public Tunnel with Custom Subdomain
-    print(f"\n[2/3] Establishing public tunnel on subdomain '{PREFERRED_SUBDOMAIN}'...", flush=True)
-    tunnel_proc, public_url = start_tunnel()
+    # 2. Start Public Tunnel forwarding to selected_port
+    print(f"\n[2/3] Establishing public tunnel on subdomain '{PREFERRED_SUBDOMAIN}' (forwarding port {selected_port})...", flush=True)
+    tunnel_proc, public_url = start_tunnel(selected_port)
     print(f"      -> Public tunnel active: {public_url}", flush=True)
 
     # 3. Sync Vapi Assistant Webhook
@@ -169,6 +198,7 @@ def main():
     formatted_phone = "+1 (463) 223-1253"
     print("\n" + "#" * 75, flush=True)
     print(f"  SYSTEM STATUS: ONLINE & READY FOR CALLS", flush=True)
+    print(f"  Local Port:            {selected_port}", flush=True)
     print(f"  Custom Subdomain:      https://carecloud-voice-ai.loca.lt", flush=True)
     print(f"  Dialable Phone Number: {formatted_phone}", flush=True)
     print(f"  Public REST API:       {public_url}/patients", flush=True)
@@ -228,7 +258,7 @@ def main():
                         tunnel_proc.terminate()
                     except Exception:
                         pass
-                    tunnel_proc, public_url = start_tunnel()
+                    tunnel_proc, public_url = start_tunnel(selected_port)
                     update_vapi_webhook(public_url)
                     print(f"      -> Reconnected: {public_url}", flush=True)
     except KeyboardInterrupt:
