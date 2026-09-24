@@ -275,3 +275,52 @@ def restore_patient(
         )
     return StandardEnvelope(data=patient.to_dict(), error=None)
 
+
+@router.delete(
+    "/{patient_id}/permanent",
+    status_code=status.HTTP_200_OK,
+    summary="Permanently delete patient record from local and cloud databases"
+)
+def permanently_delete_patient(
+    patient_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Permanently purges a patient record from both local SQLite and Supabase Cloud.
+    """
+    success = PatientService.hard_delete_patient(db, patient_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Patient with ID '{patient_id}' not found."
+        )
+    return StandardEnvelope(
+        data={
+            "patient_id": patient_id,
+            "message": "Patient record permanently deleted from local and cloud databases."
+        },
+        error=None
+    )
+
+
+@router.post(
+    "/sync-supabase",
+    status_code=status.HTTP_200_OK,
+    summary="Force bidirectional synchronization with Supabase Cloud"
+)
+def sync_supabase(
+    db: Session = Depends(get_db)
+):
+    """
+    Forces an immediate bidirectional synchronization between local SQLite and Supabase Cloud.
+    """
+    success = PatientService.sync_with_supabase(db, force=True)
+    return StandardEnvelope(
+        data={
+            "success": success,
+            "message": "Synchronization with Supabase Cloud completed."
+        },
+        error=None
+    )
+
+

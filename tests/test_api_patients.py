@@ -270,3 +270,30 @@ def test_export_patients_csv(client, sample_patient_dict):
     assert "Alexander,Hamilton" in csv_text
     assert "United States" in csv_text
 
+
+def test_permanently_delete_patient(client, sample_patient_dict):
+    """Test DELETE /patients/:id/permanent permanently purges record from DB."""
+    create_res = client.post("/patients", json=sample_patient_dict)
+    patient_id = create_res.json()["data"]["patient_id"]
+
+    # Permanently delete
+    perm_res = client.delete(f"/patients/{patient_id}/permanent")
+    assert perm_res.status_code == 200
+    assert perm_res.json()["data"]["patient_id"] == patient_id
+
+    # Verify not present even with include_deleted=True
+    get_res = client.get(f"/patients/{patient_id}")
+    assert get_res.status_code == 404
+
+    all_res = client.get("/patients?include_deleted=true")
+    ids = [p["patient_id"] for p in all_res.json()["data"]]
+    assert patient_id not in ids
+
+
+def test_sync_supabase_endpoint(client):
+    """Test POST /patients/sync-supabase endpoint executes successfully."""
+    res = client.post("/patients/sync-supabase")
+    assert res.status_code == 200
+    assert res.json()["data"]["message"] == "Synchronization with Supabase Cloud completed."
+
+

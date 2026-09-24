@@ -327,6 +327,14 @@
               <option value="ALL">All States</option>
             </select>
 
+            <!-- Sync Supabase Cloud Button -->
+            <button id="syncCloudBtn" onclick="syncCloudNow()" class="ios-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-ios-blue shadow-sm flex items-center space-x-1.5 transition" title="Force sync with Supabase Cloud">
+              <svg id="syncCloudIcon" class="w-4 h-4 text-ios-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>Sync Cloud</span>
+            </button>
+
             <!-- Download CSV Button -->
             <button onclick="downloadPatientsCSV()" class="ios-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center space-x-1.5 transition" title="Download Patient Information as CSV">
               <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,6 +452,9 @@
           <div>Updated: <span id="modalUpdatedAt" class="text-slate-600 font-medium">--</span></div>
         </div>
         <div class="flex items-center space-x-2">
+          <button id="modalPermanentDeleteBtn" onclick="handleModalPermanentDelete()" class="hidden ios-btn px-3 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-semibold transition text-xs">
+            Purge Permanently
+          </button>
           <button id="modalActionBtn" onclick="handleModalAction()" class="ios-btn px-4 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold transition">
             Delete Patient (Archive)
           </button>
@@ -1188,16 +1199,22 @@
             </div>
           </div>
 
-          <!-- Bottom Card Actions: Quick Delete / Restore -->
+          <!-- Bottom Card Actions: Quick Delete / Restore / Purge -->
           <div class="mt-3.5 pt-2.5 border-t border-gray-100/80 flex items-center justify-between text-xs">
             ${isDeleted ? `
               <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">
                 🗄️ In Archive (${p.deleted_at ? new Date(p.deleted_at).toLocaleDateString() : 'Deleted'})
               </span>
-              <button onclick="event.stopPropagation(); restorePatient('${p.patient_id}', '${safeName}')" class="ios-btn px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm flex items-center space-x-1">
-                <span>Restore</span>
-                <span>✨</span>
-              </button>
+              <div class="flex items-center space-x-1.5">
+                <button onclick="event.stopPropagation(); restorePatient('${p.patient_id}', '${safeName}')" class="ios-btn px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm flex items-center space-x-1" title="Restore back to Active Patients">
+                  <span>Restore</span>
+                  <span>✨</span>
+                </button>
+                <button onclick="event.stopPropagation(); permanentlyDeletePatient('${p.patient_id}', '${safeName}')" class="ios-btn px-2 py-1 rounded-xl bg-gray-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 font-semibold text-[11px] transition" title="Permanently delete from both local and Supabase cloud databases">
+                  <span>Purge</span>
+                  <span>🗑️</span>
+                </button>
+              </div>
             ` : `
               <span class="text-[11px] text-slate-400">Status: <span class="font-semibold text-emerald-600">Active Record</span></span>
               <button onclick="event.stopPropagation(); deletePatient('${p.patient_id}', '${safeName}')" class="ios-btn px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-[11px] transition flex items-center space-x-1" title="Move to Archive folder">
@@ -1243,16 +1260,22 @@
       document.getElementById('modalCreatedAt').innerText = patient.created_at ? new Date(patient.created_at).toLocaleString() : 'N/A';
       document.getElementById('modalUpdatedAt').innerText = patient.updated_at ? new Date(patient.updated_at).toLocaleString() : 'N/A';
 
-      // Update Modal Action Button based on Active vs Archived Status
+      // Update Modal Action Button & Permanent Delete based on Active vs Archived Status
       const actionBtn = document.getElementById('modalActionBtn');
-      if (actionBtn) {
-        if (patient.deleted_at) {
+      const permBtn = document.getElementById('modalPermanentDeleteBtn');
+
+      if (patient.deleted_at) {
+        if (actionBtn) {
           actionBtn.innerText = "Restore Patient to Active";
           actionBtn.className = "ios-btn px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition flex items-center space-x-1.5";
-        } else {
+        }
+        if (permBtn) permBtn.classList.remove('hidden');
+      } else {
+        if (actionBtn) {
           actionBtn.innerText = "Delete Patient (Move to Archive)";
           actionBtn.className = "ios-btn px-4 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold transition flex items-center space-x-1.5";
         }
+        if (permBtn) permBtn.classList.add('hidden');
       }
 
       const modal = document.getElementById('patientModal');
@@ -1277,6 +1300,15 @@
       } else {
         await deletePatient(patient.patient_id, name);
       }
+    }
+
+    // Modal permanent delete dispatcher
+    async function handleModalPermanentDelete() {
+      if (!selectedPatientId) return;
+      const patient = allPatients.find(p => p.patient_id === selectedPatientId);
+      if (!patient) return;
+      const name = `${patient.first_name} ${patient.last_name}`;
+      await permanentlyDeletePatient(patient.patient_id, name);
     }
 
     // Delete Patient (moves to archive folder and soft-deletes in backend SQLite + Supabase)
@@ -1312,6 +1344,44 @@
         }
       } catch (err) {
         showToast('Error connecting to backend API.', '⚠️');
+      }
+    }
+
+    // Permanently Purge Patient (removes from both SQLite and Supabase Cloud)
+    async function permanentlyDeletePatient(id, name = 'this patient') {
+      if (!confirm(`WARNING: Are you sure you want to PERMANENTLY purge ${name}?\n\nThis will completely remove the record from both local SQLite and Supabase Cloud. This action cannot be undone.`)) return;
+
+      try {
+        const res = await fetch(`/patients/${id}/permanent`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast(`${name} permanently purged from database.`, '🗑️');
+          closeModal();
+          await fetchPatients();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.detail || 'Could not purge patient record.', '⚠️');
+        }
+      } catch (err) {
+        showToast('Error connecting to backend API.', '⚠️');
+      }
+    }
+
+    // Force Sync with Supabase Cloud
+    async function syncCloudNow() {
+      const icon = document.getElementById('syncCloudIcon');
+      if (icon) icon.classList.add('animate-spin');
+      try {
+        const res = await fetch('/patients/sync-supabase', { method: 'POST' });
+        if (res.ok) {
+          showToast('Synchronized with Supabase Cloud!', '☁️');
+          await fetchPatients(true);
+        } else {
+          showToast('Could not sync with Supabase Cloud.', '⚠️');
+        }
+      } catch (e) {
+        showToast('Network error syncing with cloud.', '⚠️');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
       }
     }
 

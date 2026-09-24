@@ -3,6 +3,10 @@ Pytest Fixtures and Test Database Configuration
 """
 import pytest
 import os
+
+# Signal that tests are active to bypass cloud side-effects and retain in-memory isolation
+os.environ["TESTING"] = "true"
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

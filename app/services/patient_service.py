@@ -11,10 +11,19 @@ from sqlalchemy import and_
 
 from app.models.patient import Patient, SexEnum
 from app.schemas.patient import PatientCreate, PatientUpdate, parse_and_validate_dob, normalize_phone
-from app.core.supabase_client import sync_patient_to_supabase
+from app.core.supabase_client import (
+    sync_patient_to_supabase,
+    delete_patient_from_supabase,
+    reconcile_patients_with_supabase
+)
 
 
 class PatientService:
+
+    @staticmethod
+    def sync_with_supabase(db: Session, force: bool = True) -> bool:
+        """Forces an immediate bidirectional synchronization with Supabase Cloud."""
+        return reconcile_patients_with_supabase(db, force=force)
 
     @staticmethod
     def create_patient(db: Session, patient_in: PatientCreate) -> Patient:
@@ -53,7 +62,15 @@ class PatientService:
         query = db.query(Patient).filter(Patient.patient_id == patient_id)
         if not include_deleted:
             query = query.filter(Patient.deleted_at.is_(None))
-        return query.first()
+        patient = query.first()
+        if not patient:
+            # Check if recently updated in Supabase
+            if reconcile_patients_with_supabase(db, force=True):
+                query = db.query(Patient).filter(Patient.patient_id == patient_id)
+                if not include_deleted:
+                    query = query.filter(Patient.deleted_at.is_(None))
+                patient = query.first()
+        return patient
 
     @staticmethod
     def find_by_phone(
@@ -80,7 +97,12 @@ class PatientService:
     ) -> List[Patient]:
         """
         Lists active patients with optional query filtering by last_name, date_of_birth, or phone_number.
+        Automatically reconciles with Supabase Cloud if enabled so deletions and updates in Supabase
+        are immediately reflected locally.
         """
+        # Reconcile local SQLite with Supabase Cloud
+        reconcile_patients_with_supabase(db)
+
         query = db.query(Patient)
 
         if not include_deleted:
@@ -166,6 +188,20 @@ class PatientService:
         db.refresh(patient)
         sync_patient_to_supabase(patient.to_dict())
         return patient
+
+    @staticmethod
+    def hard_delete_patient(db: Session, patient_id: str) -> bool:
+        """
+        Permanently purges a patient record from both local SQLite and Supabase Cloud.
+        """
+        patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
+        if not patient:
+            return False
+
+        db.delete(patient)
+        db.commit()
+        delete_patient_from_supabase(patient_id)
+        return True
 
     @staticmethod
     def seed_demo_data_if_empty(db: Session, seed_file_path: str = "seed/patients_seed.json"):
