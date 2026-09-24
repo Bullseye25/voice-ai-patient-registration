@@ -252,3 +252,26 @@ def delete_patient(
         },
         error=None
     )
+
+
+@router.post(
+    "/{patient_id}/restore",
+    status_code=status.HTTP_200_OK,
+    response_model=StandardEnvelope[PatientResponse],
+    summary="Restore an archived patient record"
+)
+def restore_patient(
+    patient_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Restores an archived patient record back to active status.
+    """
+    patient = PatientService.restore_patient(db, patient_id)
+    if not patient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Archived patient with ID '{patient_id}' not found."
+        )
+    return StandardEnvelope(data=patient.to_dict(), error=None)
+

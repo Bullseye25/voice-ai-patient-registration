@@ -149,6 +149,25 @@ class PatientService:
         return patient
 
     @staticmethod
+    def restore_patient(db: Session, patient_id: str) -> Optional[Patient]:
+        """
+        Restores an archived patient record by clearing deleted_at timestamp.
+        """
+        patient = db.query(Patient).filter(
+            and_(Patient.patient_id == patient_id, Patient.deleted_at.is_not(None))
+        ).first()
+
+        if not patient:
+            return None
+
+        patient.deleted_at = None
+        patient.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(patient)
+        sync_patient_to_supabase(patient.to_dict())
+        return patient
+
+    @staticmethod
     def seed_demo_data_if_empty(db: Session, seed_file_path: str = "seed/patients_seed.json"):
         """Seeds initial patient records if database is empty."""
         try:

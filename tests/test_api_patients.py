@@ -187,6 +187,35 @@ def test_soft_delete_patient(client, sample_patient_dict):
     assert patient_id not in ids
 
 
+def test_restore_patient(client, sample_patient_dict):
+    """Test POST /patients/:id/restore un-deletes a record and returns it to active status."""
+    create_res = client.post("/patients", json=sample_patient_dict)
+    patient_id = create_res.json()["data"]["patient_id"]
+
+    # Delete (archive) patient
+    del_res = client.delete(f"/patients/{patient_id}")
+    assert del_res.status_code == 200
+    assert del_res.json()["data"]["deleted_at"] is not None
+
+    # Archived patient is visible when include_deleted=true
+    archive_res = client.get("/patients?include_deleted=true")
+    archive_ids = [p["patient_id"] for p in archive_res.json()["data"]]
+    assert patient_id in archive_ids
+
+    # Restore patient
+    restore_res = client.post(f"/patients/{patient_id}/restore")
+    assert restore_res.status_code == 200
+    data = restore_res.json()["data"]
+    assert data["patient_id"] == patient_id
+    assert data["deleted_at"] is None
+
+    # Subsequent GET /patients/:id must succeed now that it's restored
+    get_res = client.get(f"/patients/{patient_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["data"]["first_name"] == "Alexander"
+
+
+
 def test_persistence_across_server_restarts(tmp_path, sample_patient_dict):
     """
     Test SQLite disk persistence: verifies data created survives across session and engine rebuilds.
