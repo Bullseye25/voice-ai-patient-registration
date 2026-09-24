@@ -44,19 +44,6 @@ def find_cloudflared() -> str:
     return "cloudflared"
 
 
-def find_npx() -> str:
-    """Finds path to npx.cmd or npx executable."""
-    candidates = [
-        r"C:\Program Files\nodejs\npx.cmd",
-        shutil.which("npx.cmd"),
-        shutil.which("npx"),
-    ]
-    for c in candidates:
-        if c and os.path.exists(c):
-            return c
-    return "npx"
-
-
 def update_vapi_webhook(public_url: str):
     """Updates Vapi assistant serverUrl with the active public tunnel."""
     try:
@@ -81,27 +68,28 @@ def update_vapi_webhook(public_url: str):
 
 def start_tunnel():
     """Starts localtunnel with custom subdomain or falls back to Cloudflare."""
-    npx_cmd = find_npx()
-    if os.path.exists(npx_cmd):
-        lt_cmd = [npx_cmd, "--yes", "localtunnel", "--port", "8000", "--subdomain", PREFERRED_SUBDOMAIN]
+    lt_script = Path("node_modules/localtunnel/bin/lt.js")
+    if lt_script.exists():
+        node_cmd = shutil.which("node") or "node"
+        lt_cmd = [node_cmd, str(lt_script), "--port", "8000", "--subdomain", PREFERRED_SUBDOMAIN]
         try:
             proc = subprocess.Popen(
                 lt_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                encoding="utf-8",
-                errors="replace"
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
-            # Read output for URL
-            start = time.time()
-            while time.time() - start < 15:
-                line = proc.stdout.readline()
-                if "your url is:" in line.lower():
-                    url = line.split("your url is:")[-1].strip()
-                    if url:
-                        return proc, url
+            expected_url = f"https://{PREFERRED_SUBDOMAIN}.loca.lt"
+            # Verify reachable within 8 seconds
+            for _ in range(8):
+                time.sleep(1)
+                try:
+                    r = httpx.get(f"{expected_url}/health", timeout=3.0)
+                    if r.status_code == 200:
+                        return proc, expected_url
+                except Exception:
+                    pass
+            return proc, expected_url
         except Exception:
             pass
 
@@ -124,7 +112,7 @@ def start_tunnel():
         match = url_pattern.search(line)
         if match:
             return proc, match.group(0)
-    return proc, "https://carecloud-voice-ai.loca.lt"
+    return proc, f"https://{PREFERRED_SUBDOMAIN}.loca.lt"
 
 
 def main():
@@ -142,6 +130,7 @@ def main():
     ]
     backend_proc = subprocess.Popen(
         uvicorn_cmd,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
@@ -199,7 +188,7 @@ def main():
     print("     your record appears in the database!")
     print("\n  BONUS TEST (Duplicate Detection):")
     print(f"  - Call back from the same phone number.")
-    print("  - Alex recognizes you: \"It looks like we already have a record for [Name].")
+    print("  - Alex recognizes you: \"It looks like we already have a record for [Name].", flush=True)
     print("    Would you like to update your information instead?\"", flush=True)
     print("-" * 75, flush=True)
     print("\n[SYSTEM RUNNING] Press Ctrl+C in this terminal window to stop servers.\n", flush=True)
@@ -216,16 +205,32 @@ def main():
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    # Keep alive loop
+    # Keep alive loop with auto-reconnect watchdog
     try:
+        last_health_check = time.time()
         while True:
-            time.sleep(1)
+            time.sleep(2)
             if backend_proc.poll() is not None:
                 print("Backend stopped.", flush=True)
                 break
-            if tunnel_proc.poll() is not None:
-                print("Tunnel stopped.", flush=True)
-                break
+
+            # Watchdog: verify tunnel process or health
+            now = time.time()
+            if tunnel_proc.poll() is not None or (now - last_health_check > 30):
+                last_health_check = now
+                try:
+                    r = httpx.get(f"{public_url}/health", timeout=3.0)
+                    if r.status_code != 200:
+                        raise Exception("Health check failed")
+                except Exception:
+                    print("\n[WATCHDOG] Reconnecting tunnel to keep subdomain alive...", flush=True)
+                    try:
+                        tunnel_proc.terminate()
+                    except Exception:
+                        pass
+                    tunnel_proc, public_url = start_tunnel()
+                    update_vapi_webhook(public_url)
+                    print(f"      -> Reconnected: {public_url}", flush=True)
     except KeyboardInterrupt:
         shutdown(None, None)
 
