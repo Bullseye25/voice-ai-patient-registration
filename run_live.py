@@ -25,9 +25,9 @@ try:
 except ImportError:
     pass
 
-VAPI_API_KEY = os.getenv("VAPI_API_KEY", "2c6c775a-673d-4251-8006-763dc8492bd7")
-ASSISTANT_ID = os.getenv("VAPI_ASSISTANT_ID", "c42c2da7-e3b9-431b-ace5-a25bdc6b8f67")
-PHONE_NUMBER = os.getenv("VAPI_PHONE_NUMBER", "+14632231253")
+VAPI_API_KEY = os.getenv("VAPI_API_KEY", "b9c9d3f2-d2ca-42a8-b8e0-b5622041e5cb")
+ASSISTANT_ID = os.getenv("VAPI_ASSISTANT_ID", "7840c9fd-5322-4e1b-9c22-06fc056a55e0")
+PHONE_NUMBER = os.getenv("VAPI_PHONE_NUMBER", "+19457889516")
 PREFERRED_SUBDOMAIN = "carecloud-voice-ai"
 
 
@@ -198,7 +198,8 @@ def main():
         print(f"      -> Notice: {details}", flush=True)
 
     # Display Ready Information
-    formatted_phone = "+1 (463) 223-1253"
+    raw_phone = os.getenv("VAPI_PHONE_NUMBER", "+19457889516")
+    formatted_phone = "+1 (945) 788-9516" if "945" in raw_phone else raw_phone
     print("\n" + "#" * 75, flush=True)
     print(f"  SYSTEM STATUS: ONLINE & READY FOR CALLS", flush=True)
     print(f"  Local Port:                   {selected_port}", flush=True)

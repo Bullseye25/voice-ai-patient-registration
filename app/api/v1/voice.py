@@ -304,10 +304,12 @@ class SwitchVapiAccountRequest(BaseModel):
 @router.get("/account-status", status_code=status.HTTP_200_OK, summary="Get Masked Vapi Account Info")
 def get_vapi_account_status():
     """Returns masked credentials and telephony connection status without leaking secret keys."""
-    key = settings.VAPI_API_KEY or os.getenv("VAPI_API_KEY", "")
-    pub = settings.VAPI_PUBLIC_KEY or os.getenv("VAPI_PUBLIC_KEY", "")
-    aid = settings.VAPI_ASSISTANT_ID or os.getenv("VAPI_ASSISTANT_ID", "")
-    phone = settings.VAPI_PHONE_NUMBER or os.getenv("VAPI_PHONE_NUMBER", "+1 (463) 223-1253")
+    from dotenv import dotenv_values
+    env_vals = dotenv_values(".env")
+    key = env_vals.get("VAPI_API_KEY") or os.getenv("VAPI_API_KEY") or settings.VAPI_API_KEY or ""
+    pub = env_vals.get("VAPI_PUBLIC_KEY") or os.getenv("VAPI_PUBLIC_KEY") or settings.VAPI_PUBLIC_KEY or ""
+    aid = env_vals.get("VAPI_ASSISTANT_ID") or os.getenv("VAPI_ASSISTANT_ID") or settings.VAPI_ASSISTANT_ID or ""
+    phone = env_vals.get("VAPI_PHONE_NUMBER") or os.getenv("VAPI_PHONE_NUMBER") or settings.VAPI_PHONE_NUMBER or "+1 (945) 788-9516"
 
     return {
         "is_configured": bool(key),
