@@ -1,7 +1,7 @@
 """
 CareCloud Voice AI Agent - Live Runner
-Starts FastAPI backend, launches Cloudflare Tunnel, automatically syncs Vapi webhook,
-and displays reviewer testing instructions.
+Starts FastAPI backend, launches public tunnel with custom subdomain (carecloud-voice-ai),
+automatically syncs Vapi webhook, and displays reviewer testing instructions.
 """
 import sys
 import os
@@ -10,7 +10,6 @@ import time
 import signal
 import subprocess
 import shutil
-import threading
 from pathlib import Path
 
 # Force unbuffered output
@@ -28,6 +27,7 @@ except ImportError:
 VAPI_API_KEY = os.getenv("VAPI_API_KEY", "2c6c775a-673d-4251-8006-763dc8492bd7")
 ASSISTANT_ID = os.getenv("VAPI_ASSISTANT_ID", "c42c2da7-e3b9-431b-ace5-a25bdc6b8f67")
 PHONE_NUMBER = os.getenv("VAPI_PHONE_NUMBER", "+14632231253")
+PREFERRED_SUBDOMAIN = "carecloud-voice-ai"
 
 
 def find_cloudflared() -> str:
@@ -42,6 +42,19 @@ def find_cloudflared() -> str:
         if c and os.path.exists(c):
             return c
     return "cloudflared"
+
+
+def find_npx() -> str:
+    """Finds path to npx.cmd or npx executable."""
+    candidates = [
+        r"C:\Program Files\nodejs\npx.cmd",
+        shutil.which("npx.cmd"),
+        shutil.which("npx"),
+    ]
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+    return "npx"
 
 
 def update_vapi_webhook(public_url: str):
@@ -64,6 +77,54 @@ def update_vapi_webhook(public_url: str):
         return False, f"HTTP {res.status_code}: {res.text}"
     except Exception as e:
         return False, str(e)
+
+
+def start_tunnel():
+    """Starts localtunnel with custom subdomain or falls back to Cloudflare."""
+    npx_cmd = find_npx()
+    if os.path.exists(npx_cmd):
+        lt_cmd = [npx_cmd, "--yes", "localtunnel", "--port", "8000", "--subdomain", PREFERRED_SUBDOMAIN]
+        try:
+            proc = subprocess.Popen(
+                lt_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                encoding="utf-8",
+                errors="replace"
+            )
+            # Read output for URL
+            start = time.time()
+            while time.time() - start < 15:
+                line = proc.stdout.readline()
+                if "your url is:" in line.lower():
+                    url = line.split("your url is:")[-1].strip()
+                    if url:
+                        return proc, url
+        except Exception:
+            pass
+
+    # Fallback to Cloudflare Tunnel
+    cloudflared_exe = find_cloudflared()
+    tunnel_cmd = [cloudflared_exe, "tunnel", "--url", "http://127.0.0.1:8000"]
+    proc = subprocess.Popen(
+        tunnel_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        encoding="utf-8",
+        errors="replace"
+    )
+    url_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
+    start = time.time()
+    while time.time() - start < 30:
+        line = proc.stdout.readline()
+        match = url_pattern.search(line)
+        if match:
+            return proc, match.group(0)
+    return proc, "https://carecloud-voice-ai.loca.lt"
 
 
 def main():
@@ -102,40 +163,10 @@ def main():
         sys.exit(1)
     print("      -> FastAPI backend is running and healthy.", flush=True)
 
-    # 2. Start Cloudflare Tunnel
-    print("\n[2/3] Establishing secure public HTTPS tunnel...", flush=True)
-    cloudflared_exe = find_cloudflared()
-    tunnel_cmd = [cloudflared_exe, "tunnel", "--url", "http://127.0.0.1:8000"]
-
-    tunnel_proc = subprocess.Popen(
-        tunnel_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        encoding="utf-8",
-        errors="replace"
-    )
-
-    public_url = None
-    url_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
-
-    # Read output until tunnel URL is found (up to 30 seconds)
-    start_time = time.time()
-    while time.time() - start_time < 30:
-        line = tunnel_proc.stdout.readline()
-        if not line and tunnel_proc.poll() is not None:
-            break
-        match = url_pattern.search(line)
-        if match:
-            public_url = match.group(0)
-            break
-
-    if not public_url:
-        print("[WARNING] Could not parse trycloudflare URL automatically. Using cached URL.", flush=True)
-        public_url = os.getenv("WEBHOOK_BASE_URL", "https://soldiers-educated-maintains-beauty.trycloudflare.com")
-    else:
-        print(f"      -> Public tunnel active: {public_url}", flush=True)
+    # 2. Start Public Tunnel with Custom Subdomain
+    print(f"\n[2/3] Establishing public tunnel on subdomain '{PREFERRED_SUBDOMAIN}'...", flush=True)
+    tunnel_proc, public_url = start_tunnel()
+    print(f"      -> Public tunnel active: {public_url}", flush=True)
 
     # 3. Sync Vapi Assistant Webhook
     print("\n[3/3] Synchronizing Vapi Voice Assistant webhook...", flush=True)
@@ -149,25 +180,26 @@ def main():
     formatted_phone = "+1 (463) 223-1253"
     print("\n" + "#" * 75, flush=True)
     print(f"  SYSTEM STATUS: ONLINE & READY FOR CALLS", flush=True)
+    print(f"  Custom Subdomain:      https://carecloud-voice-ai.loca.lt", flush=True)
     print(f"  Dialable Phone Number: {formatted_phone}", flush=True)
-    print(f"  Public REST API:       {public_url}", flush=True)
+    print(f"  Public REST API:       {public_url}/patients", flush=True)
     print(f"  Interactive Docs:      {public_url}/docs", flush=True)
     print("#" * 75, flush=True)
 
     print("\n" + "-" * 75, flush=True)
     print("  HOW TO TEST OVER THE PHONE:", flush=True)
-    print(f"  1. Call {formatted_phone} from your phone.", flush=True)
-    print("  2. Alex will answer: \"Thank you for calling CareCloud Patient Registration!", flush=True)
-    print("     My name is Alex. I can help you register as a new patient today...\"", flush=True)
-    print("  3. Provide your name, birth date, sex, 10-digit phone, and street address.", flush=True)
-    print("  4. Listen as Alex reads back all your information to confirm.", flush=True)
-    print("  5. Say \"Yes, that is correct\".", flush=True)
-    print("  6. Alex will save your registration and close gracefully: \"You're all set!\"", flush=True)
-    print(f"  7. Open {public_url}/patients in your browser to verify", flush=True)
-    print("     your record appears in the database!", flush=True)
-    print("\n  BONUS TEST (Duplicate Detection):", flush=True)
-    print(f"  - Call back from the same phone number.", flush=True)
-    print("  - Alex recognizes you: \"It looks like we already have a record for [Name].", flush=True)
+    print(f"  1. Call {formatted_phone} from your phone.")
+    print("  2. Alex will answer: \"Thank you for calling CareCloud Patient Registration!")
+    print("     My name is Alex. I can help you register as a new patient today...\"")
+    print("  3. Provide your name, birth date, sex, 10-digit phone, and street address.")
+    print("  4. Listen as Alex reads back all your information to confirm.")
+    print("  5. Say \"Yes, that is correct\".")
+    print("  6. Alex will save your registration and close gracefully: \"You're all set!\"")
+    print(f"  7. Open {public_url}/patients in your browser to verify")
+    print("     your record appears in the database!")
+    print("\n  BONUS TEST (Duplicate Detection):")
+    print(f"  - Call back from the same phone number.")
+    print("  - Alex recognizes you: \"It looks like we already have a record for [Name].")
     print("    Would you like to update your information instead?\"", flush=True)
     print("-" * 75, flush=True)
     print("\n[SYSTEM RUNNING] Press Ctrl+C in this terminal window to stop servers.\n", flush=True)

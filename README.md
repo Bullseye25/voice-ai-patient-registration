@@ -13,8 +13,8 @@ The **Voice AI Agent Patient Registration System** is an end-to-end conversation
 
 ### Live Demo & Reviewer Contact Information
 * **Dialable U.S. Phone Number:** `+1 (463) 223-1253` *(Call to speak with Alex, the Voice AI agent)*
-* **Live API Base URL:** [https://soldiers-educated-maintains-beauty.trycloudflare.com](https://soldiers-educated-maintains-beauty.trycloudflare.com)
-* **Interactive API Documentation:** [https://soldiers-educated-maintains-beauty.trycloudflare.com/docs](https://soldiers-educated-maintains-beauty.trycloudflare.com/docs) (Swagger UI)
+* **Live API Base URL:** [https://carecloud-voice-ai.loca.lt](https://carecloud-voice-ai.loca.lt)
+* **Interactive API Documentation:** [https://carecloud-voice-ai.loca.lt/docs](https://carecloud-voice-ai.loca.lt/docs) (Swagger UI)
 
 ---
 
@@ -131,18 +131,18 @@ Error responses return:
 #### 1. List Active Patients (with Optional Filters)
 ```bash
 # List all active patients
-curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients"
+curl -X GET "https://carecloud-voice-ai.loca.lt/patients"
 
 # Search by phone number
-curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients?phone_number=5551234567"
+curl -X GET "https://carecloud-voice-ai.loca.lt/patients?phone_number=5551234567"
 
 # Search by last name
-curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients?last_name=Vance"
+curl -X GET "https://carecloud-voice-ai.loca.lt/patients?last_name=Vance"
 ```
 
 #### 2. Register New Patient (POST /patients)
 ```bash
-curl -X POST "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients" \
+curl -X POST "https://carecloud-voice-ai.loca.lt/patients" \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "Jane",
@@ -162,12 +162,12 @@ curl -X POST "https://soldiers-educated-maintains-beauty.trycloudflare.com/patie
 
 #### 3. Retrieve Single Patient (GET /patients/:id)
 ```bash
-curl -X GET "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>"
+curl -X GET "https://carecloud-voice-ai.loca.lt/patients/<patient_id>"
 ```
 
 #### 4. Update Existing Patient (PUT /patients/:id)
 ```bash
-curl -X PUT "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>" \
+curl -X PUT "https://carecloud-voice-ai.loca.lt/patients/<patient_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "city": "Dallas",
@@ -177,7 +177,7 @@ curl -X PUT "https://soldiers-educated-maintains-beauty.trycloudflare.com/patien
 
 #### 5. Soft-Delete Patient (DELETE /patients/:id)
 ```bash
-curl -X DELETE "https://soldiers-educated-maintains-beauty.trycloudflare.com/patients/<patient_id>"
+curl -X DELETE "https://carecloud-voice-ai.loca.lt/patients/<patient_id>"
 ```
 
 ---
@@ -200,6 +200,7 @@ Reviewers can call the live U.S. phone number directly:
    * Confirm with *"Yes, that is correct"*.
    * The AI will finalize registration: *"You're all set, [Name]!"*
    * Query `GET /patients` on the API to verify your record is persisted!
+     `https://carecloud-voice-ai.loca.lt/patients`
 
 2. **Scenario 2: Error Handling & Correction Testing**
    * Try giving an invalid date (e.g. a future year like 2030) — the agent will politely re-prompt.
