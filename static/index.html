@@ -159,7 +159,7 @@
   <main class="flex-1 flex flex-col">
 
     <!-- ================= 1. WELCOME / ONBOARDING SCREEN ================= -->
-    <section id="welcomeScreen" class="flex-1 flex items-center justify-center p-6 md:p-12 transition-all duration-500">
+    <section id="welcomeScreen" class="hidden flex-1 flex items-center justify-center p-6 md:p-12 transition-all duration-500">
       <div class="max-w-3xl w-full text-center space-y-8">
         
         <!-- Animated Voice AI Pulse Visual -->
@@ -296,7 +296,7 @@
     </section>
 
     <!-- ================= 2. MAIN CLINICAL DASHBOARD ================= -->
-    <section id="dashboardScreen" class="hidden flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto space-y-6">
+    <section id="dashboardScreen" class="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto space-y-6">
 
       <!-- Session Paused Banner (shows when session is stopped) -->
       <div id="dashboardSessionPausedBanner" class="hidden glass-card bg-amber-50/90 border border-amber-200/80 p-4 rounded-2xl flex items-center justify-between text-xs text-amber-900">
@@ -1068,19 +1068,32 @@
       }
     }
 
+    function formatPhoneNumber(phone) {
+      if (!phone) return '+1 (945) 788-9516';
+      const clean = phone.replace(/\D/g, '');
+      if (clean.length === 10) {
+        return `+1 (${clean.slice(0, 3)}) ${clean.slice(3, 6)}-${clean.slice(6)}`;
+      }
+      if (clean.length === 11 && clean.startsWith('1')) {
+        return `+1 (${clean.slice(1, 4)}) ${clean.slice(4, 7)}-${clean.slice(7)}`;
+      }
+      return phone;
+    }
+
     function updateDisplayedPhoneNumber(phone) {
       if (!phone) return;
-      currentPhoneNumber = phone;
+      const formatted = formatPhoneNumber(phone);
+      currentPhoneNumber = formatted;
       const headerEl = document.getElementById('headerPhoneNumber');
-      if (headerEl) headerEl.innerText = phone;
+      if (headerEl) headerEl.innerText = formatted;
       const welcomeEl = document.getElementById('welcomePhoneNumber');
-      if (welcomeEl) welcomeEl.innerText = phone;
+      if (welcomeEl) welcomeEl.innerText = formatted;
       const vapiPhoneEl = document.getElementById('vapiPhoneNum');
-      if (vapiPhoneEl) vapiPhoneEl.innerText = phone;
+      if (vapiPhoneEl) vapiPhoneEl.innerText = formatted;
       const metricEl = document.getElementById('dashboardMetricPhone');
-      if (metricEl) metricEl.innerText = phone;
+      if (metricEl) metricEl.innerText = formatted;
       const successEl = document.getElementById('vapiSuccessPhoneNumber');
-      if (successEl) successEl.innerText = phone;
+      if (successEl) successEl.innerText = formatted;
     }
 
     function copySuccessPhone() {
@@ -1842,6 +1855,7 @@
     fetchPatients();
     loadVapiStatus();
     updateSessionUI();
+    showDashboardScreen();
   </script>
 </body>
 </html>

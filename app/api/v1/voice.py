@@ -309,7 +309,14 @@ def get_vapi_account_status():
     key = env_vals.get("VAPI_API_KEY") or os.getenv("VAPI_API_KEY") or settings.VAPI_API_KEY or ""
     pub = env_vals.get("VAPI_PUBLIC_KEY") or os.getenv("VAPI_PUBLIC_KEY") or settings.VAPI_PUBLIC_KEY or ""
     aid = env_vals.get("VAPI_ASSISTANT_ID") or os.getenv("VAPI_ASSISTANT_ID") or settings.VAPI_ASSISTANT_ID or ""
-    phone = env_vals.get("VAPI_PHONE_NUMBER") or os.getenv("VAPI_PHONE_NUMBER") or settings.VAPI_PHONE_NUMBER or "+1 (945) 788-9516"
+    raw_phone = env_vals.get("VAPI_PHONE_NUMBER") or os.getenv("VAPI_PHONE_NUMBER") or settings.VAPI_PHONE_NUMBER or "+1 (945) 788-9516"
+    digits = "".join(c for c in raw_phone if c.isdigit())
+    if len(digits) == 10:
+        phone = f"+1 ({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    elif len(digits) == 11 and digits.startswith("1"):
+        phone = f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+    else:
+        phone = raw_phone
 
     return {
         "is_configured": bool(key),
